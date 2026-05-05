@@ -1,52 +1,79 @@
-import React, { useRef } from 'react';
+import { Button, Form, Input, InputNumber, Modal, Select, Space } from 'antd';
+import { useEffect } from 'react';
+import { Controller, useForm } from 'react-hook-form';
 
-export default function ServiceFormModal({ id, data, onClose, onSubmit, onDelete }) {
-  const formRef = useRef(null);
+const CATALOGS = ['Ăn uống', 'Spa & Wellness', 'Giặt là', 'Đưa đón', 'Khác'];
+
+export default function ServiceFormModal({ open, id, data, onClose, onSubmit, onDelete }) {
+  const { control, handleSubmit, reset, formState: { errors } } = useForm();
   const service = id ? data.services.find(s => s.id === id) : null;
 
-  const handleSubmit = () => {
-    const form = formRef.current;
-    if (!form.checkValidity()) { form.reportValidity(); return; }
-    const d = Object.fromEntries(new FormData(form));
-    onSubmit(d);
-  };
+  useEffect(() => {
+    if (open) {
+      reset({
+        name: service?.name || '',
+        catalog: service?.catalog || 'Ăn uống',
+        price: service?.price || undefined,
+      });
+    } else {
+      reset();
+    }
+  }, [open, id]);
+
+  const onFormSubmit = (values) =>
+    onSubmit({ id: service?.id || '', ...values, price: values.price });
+
+  const footer = (
+    <Space>
+      {service && (
+        <Button danger type="primary" style={{ marginRight: 'auto' }} onClick={() => onDelete(service.id)}>
+          Xoá
+        </Button>
+      )}
+      <Button onClick={onClose}>Huỷ</Button>
+      <Button type="primary" onClick={handleSubmit(onFormSubmit)}>Lưu</Button>
+    </Space>
+  );
 
   return (
-    <div className="modal-bg show">
-      <div className="modal narrow">
-        <div className="modal-head">
-          <h3 className="modal-title">{service ? 'Sửa dịch vụ' : 'Thêm dịch vụ'}</h3>
-          <button className="icon-btn" onClick={onClose}>✕</button>
-        </div>
-        <div className="modal-body">
-          <form ref={formRef}>
-            <input type="hidden" name="id" defaultValue={service?.id || ''} />
-            <div className="form-field" style={{ marginBottom: 12 }}>
-              <label>Tên dịch vụ *</label>
-              <input type="text" name="name" required defaultValue={service?.name || ''} />
-            </div>
-            <div className="form-field" style={{ marginBottom: 12 }}>
-              <label>Danh mục *</label>
-              <select name="catalog" required defaultValue={service?.catalog || 'Ăn uống'}>
-                <option>Ăn uống</option>
-                <option>Spa &amp; Wellness</option>
-                <option>Giặt là</option>
-                <option>Đưa đón</option>
-                <option>Khác</option>
-              </select>
-            </div>
-            <div className="form-field">
-              <label>Đơn giá (₫) *</label>
-              <input type="number" name="price" required min="0" step="1000" defaultValue={service?.price || ''} />
-            </div>
-          </form>
-        </div>
-        <div className="modal-foot">
-          {service && <button className="btn btn-danger" style={{ marginRight: 'auto' }} onClick={() => onDelete(service.id)}>Xoá</button>}
-          <button className="btn" onClick={onClose}>Huỷ</button>
-          <button className="btn btn-primary" onClick={handleSubmit}>Lưu</button>
-        </div>
-      </div>
-    </div>
+    <Modal open={open} title={service ? 'Sửa dịch vụ' : 'Thêm dịch vụ'} onCancel={onClose} footer={footer} width={440} destroyOnHidden>
+      <Form layout="vertical">
+        <Form.Item label="Tên dịch vụ" validateStatus={errors.name ? 'error' : ''} help={errors.name?.message}>
+          <Controller
+            name="name"
+            control={control}
+            rules={{ required: 'Vui lòng nhập tên' }}
+            render={({ field }) => <Input {...field} />}
+          />
+        </Form.Item>
+        <Form.Item label="Danh mục" validateStatus={errors.catalog ? 'error' : ''} help={errors.catalog?.message}>
+          <Controller
+            name="catalog"
+            control={control}
+            rules={{ required: true }}
+            render={({ field }) => (
+              <Select {...field} options={CATALOGS.map(v => ({ value: v }))} />
+            )}
+          />
+        </Form.Item>
+        <Form.Item label="Đơn giá (₫)" validateStatus={errors.price ? 'error' : ''} help={errors.price?.message}>
+          <Controller
+            name="price"
+            control={control}
+            rules={{ required: 'Vui lòng nhập giá' }}
+            render={({ field }) => (
+              <InputNumber
+                {...field}
+                min={0}
+                step={1000}
+                style={{ width: '100%' }}
+                formatter={v => v ? new Intl.NumberFormat('vi-VN').format(v) : ''}
+                parser={v => v.replace(/\D/g, '')}
+              />
+            )}
+          />
+        </Form.Item>
+      </Form>
+    </Modal>
   );
 }

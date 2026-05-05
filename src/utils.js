@@ -37,3 +37,14 @@ export function downloadCSV(name, content) {
   a.href = url; a.download = name; a.click();
   setTimeout(() => URL.revokeObjectURL(url), 500);
 }
+
+export function revenueSeries(days) {
+  const out = [];
+  const base = [24, 28, 32, 30, 38, 46, 48, 42, 35, 31];
+  for (let i = 0; i < days; i++) {
+    const room = base[i % base.length] + (i % 3);
+    const service = Math.round(room * 0.33);
+    out.push({ room, service });
+  }
+  return out;
+}

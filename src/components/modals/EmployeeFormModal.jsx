@@ -1,70 +1,111 @@
-import React, { useRef } from 'react';
+import { Button, DatePicker, Form, Input, Modal, Select, Space } from 'antd';
+import dayjs from 'dayjs';
+import { useEffect } from 'react';
+import { Controller, useForm } from 'react-hook-form';
 import { TODAY } from '../../constants';
 
-export default function EmployeeFormModal({ id, data, onClose, onSubmit, onDelete }) {
-  const formRef = useRef(null);
+const POSITIONS = ['Lễ tân', 'Thu ngân', 'Buồng phòng', 'Quản lý', 'Bảo vệ'];
+
+export default function EmployeeFormModal({ open, id, data, onClose, onSubmit, onDelete }) {
+  const { control, handleSubmit, reset, formState: { errors } } = useForm();
   const employee = id ? data.employees.find(e => e.id === id) : null;
 
-  const handleSubmit = () => {
-    const form = formRef.current;
-    if (!form.checkValidity()) { form.reportValidity(); return; }
-    const d = Object.fromEntries(new FormData(form));
-    onSubmit(d);
-  };
+  useEffect(() => {
+    if (open) {
+      reset({
+        name: employee?.name || '',
+        dob: employee?.dob ? dayjs(employee.dob) : null,
+        phone: employee?.phone || '',
+        position: employee?.position || 'Lễ tân',
+        start: dayjs(employee?.start || TODAY),
+        working: employee ? String(employee.working) : 'true',
+      });
+    } else {
+      reset();
+    }
+  }, [open, id]);
+
+  const onFormSubmit = (values) => onSubmit({
+    id: employee?.id || '',
+    name: values.name,
+    dob: values.dob ? values.dob.format('YYYY-MM-DD') : '',
+    phone: values.phone,
+    position: values.position,
+    start: values.start ? values.start.format('YYYY-MM-DD') : TODAY,
+    working: values.working,
+  });
+
+  const footer = (
+    <Space>
+      {employee && (
+        <Button danger type="primary" style={{ marginRight: 'auto' }} onClick={() => onDelete(employee.id)}>
+          Xoá
+        </Button>
+      )}
+      <Button onClick={onClose}>Huỷ</Button>
+      <Button type="primary" onClick={handleSubmit(onFormSubmit)}>Lưu</Button>
+    </Space>
+  );
 
   return (
-    <div className="modal-bg show">
-      <div className="modal">
-        <div className="modal-head">
-          <h3 className="modal-title">{employee ? `Hồ sơ — ${employee.name}` : 'Thêm nhân viên'}</h3>
-          <button className="icon-btn" onClick={onClose}>✕</button>
+    <Modal open={open} title={employee ? `Hồ sơ — ${employee.name}` : 'Thêm nhân viên'} onCancel={onClose} footer={footer} width={560} destroyOnHidden>
+      <Form layout="vertical">
+        <Form.Item label="Họ và tên" validateStatus={errors.name ? 'error' : ''} help={errors.name?.message}>
+          <Controller
+            name="name"
+            control={control}
+            rules={{ required: 'Vui lòng nhập tên' }}
+            render={({ field }) => <Input {...field} />}
+          />
+        </Form.Item>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          <Form.Item label="Ngày sinh">
+            <Controller
+              name="dob"
+              control={control}
+              render={({ field }) => (
+                <DatePicker {...field} style={{ width: '100%' }} format="DD/MM/YYYY" />
+              )}
+            />
+          </Form.Item>
+          <Form.Item label="Số điện thoại" validateStatus={errors.phone ? 'error' : ''} help={errors.phone?.message}>
+            <Controller
+              name="phone"
+              control={control}
+              rules={{ required: 'Vui lòng nhập SĐT' }}
+              render={({ field }) => <Input {...field} />}
+            />
+          </Form.Item>
+          <Form.Item label="Vị trí" validateStatus={errors.position ? 'error' : ''} help={errors.position?.message}>
+            <Controller
+              name="position"
+              control={control}
+              rules={{ required: true }}
+              render={({ field }) => (
+                <Select {...field} options={POSITIONS.map(v => ({ value: v }))} />
+              )}
+            />
+          </Form.Item>
+          <Form.Item label="Ngày bắt đầu">
+            <Controller
+              name="start"
+              control={control}
+              render={({ field }) => (
+                <DatePicker {...field} style={{ width: '100%' }} format="DD/MM/YYYY" />
+              )}
+            />
+          </Form.Item>
+          <Form.Item label="Trạng thái" style={{ gridColumn: '1/-1' }}>
+            <Controller
+              name="working"
+              control={control}
+              render={({ field }) => (
+                <Select {...field} options={[{ value: 'true', label: 'Đang làm việc' }, { value: 'false', label: 'Đã nghỉ' }]} />
+              )}
+            />
+          </Form.Item>
         </div>
-        <div className="modal-body">
-          <form ref={formRef}>
-            <input type="hidden" name="id" defaultValue={employee?.id || ''} />
-            <div className="form-grid">
-              <div className="form-field full">
-                <label>Họ và tên *</label>
-                <input type="text" name="name" required defaultValue={employee?.name || ''} />
-              </div>
-              <div className="form-field">
-                <label>Ngày sinh</label>
-                <input type="date" name="dob" defaultValue={employee?.dob || ''} />
-              </div>
-              <div className="form-field">
-                <label>Số điện thoại *</label>
-                <input type="text" name="phone" required defaultValue={employee?.phone || ''} />
-              </div>
-              <div className="form-field">
-                <label>Vị trí *</label>
-                <select name="position" required defaultValue={employee?.position || 'Lễ tân'}>
-                  <option>Lễ tân</option>
-                  <option>Thu ngân</option>
-                  <option>Buồng phòng</option>
-                  <option>Quản lý</option>
-                  <option>Bảo vệ</option>
-                </select>
-              </div>
-              <div className="form-field">
-                <label>Ngày bắt đầu</label>
-                <input type="date" name="start" defaultValue={employee?.start || TODAY} />
-              </div>
-              <div className="form-field full">
-                <label>Trạng thái</label>
-                <select name="working" defaultValue={employee ? String(employee.working) : 'true'}>
-                  <option value="true">Đang làm việc</option>
-                  <option value="false">Đã nghỉ</option>
-                </select>
-              </div>
-            </div>
-          </form>
-        </div>
-        <div className="modal-foot">
-          {employee && <button className="btn btn-danger" style={{ marginRight: 'auto' }} onClick={() => onDelete(employee.id)}>Xoá</button>}
-          <button className="btn" onClick={onClose}>Huỷ</button>
-          <button className="btn btn-primary" onClick={handleSubmit}>Lưu</button>
-        </div>
-      </div>
-    </div>
+      </Form>
+    </Modal>
   );
 }

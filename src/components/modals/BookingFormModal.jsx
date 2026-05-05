@@ -1,86 +1,159 @@
-import React, { useRef, useEffect } from 'react';
-import { fmtVND } from '../../utils';
-import { TODAY } from '../../constants';
+import { DatePicker, Form, Input, InputNumber, Modal, Select } from "antd";
+import dayjs from "dayjs";
+import { useEffect } from "react";
+import { Controller, useForm } from "react-hook-form";
+import { TODAY } from "../../constants";
+import { fmtVND } from "../../utils";
 
-export default function BookingFormModal({ id, data, onClose, onSubmit, prefillCustomerId }) {
-  const formRef = useRef(null);
-  const booking = id ? data.bookings.find(b => b.id === id) : null;
+export default function BookingFormModal({
+  open,
+  id,
+  data,
+  onClose,
+  onSubmit,
+  prefillCustomerId,
+}) {
+  const { control, handleSubmit, reset, formState: { errors } } = useForm();
+  const booking = id ? data.bookings.find((b) => b.id === id) : null;
+  const tomorrow = dayjs(TODAY).add(1, "day");
 
   useEffect(() => {
-    if (prefillCustomerId && formRef.current) {
-      setTimeout(() => {
-        if (formRef.current) {
-          formRef.current.elements.customerId.value = String(prefillCustomerId);
-        }
-      }, 50);
+    if (open) {
+      reset({
+        customerId: prefillCustomerId || booking?.customerId || undefined,
+        checkin: dayjs(booking?.checkin || TODAY),
+        checkout: dayjs(booking?.checkout || tomorrow.format("YYYY-MM-DD")),
+        room: booking ? booking.rooms.split(",")[0].trim() : undefined,
+        quantity: booking ? booking.rooms.split(",").length : 1,
+        notes: booking?.notes || "",
+      });
+    } else {
+      reset();
     }
-  }, [prefillCustomerId]);
+  }, [open, id, prefillCustomerId]);
 
-  const handleSubmit = () => {
-    const form = formRef.current;
-    if (!form.checkValidity()) { form.reportValidity(); return; }
-    const d = Object.fromEntries(new FormData(form));
-    onSubmit(d);
-  };
+  const onFormSubmit = (values) =>
+    onSubmit({
+      id: booking?.id || "",
+      customerId: values.customerId,
+      checkin: values.checkin.format("YYYY-MM-DD"),
+      checkout: values.checkout.format("YYYY-MM-DD"),
+      room: values.room,
+      quantity: values.quantity,
+      notes: values.notes || "",
+    });
 
-  const tomorrow = new Date(TODAY);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const tomorrowStr = tomorrow.toISOString().slice(0, 10);
+  const availableRooms = data.rooms.filter((r) => r.status !== "maintenance");
 
   return (
-    <div className="modal-bg show">
-      <div className="modal wide">
-        <div className="modal-head">
-          <h3 className="modal-title">{booking ? `Sửa booking #${booking.id}` : 'Tạo booking mới'}</h3>
-          <button className="icon-btn" onClick={onClose}>✕</button>
+    <Modal
+      open={open}
+      title={booking ? `Sửa booking #${booking.id}` : "Tạo booking mới"}
+      onCancel={onClose}
+      onOk={handleSubmit(onFormSubmit)}
+      okText="Lưu"
+      cancelText="Huỷ"
+      width={760}
+      destroyOnHidden
+    >
+      <Form layout="vertical">
+        <Form.Item
+          label="Khách hàng"
+          validateStatus={errors.customerId ? "error" : ""}
+          help={errors.customerId?.message}
+        >
+          <Controller
+            name="customerId"
+            control={control}
+            rules={{ required: "Vui lòng chọn khách hàng" }}
+            render={({ field }) => (
+              <Select
+                {...field}
+                showSearch
+                placeholder="-- Chọn khách hàng --"
+                optionFilterProp="label"
+                options={data.customers.map((c) => ({
+                  value: c.id,
+                  label: `${c.name} · ${c.phone}`,
+                }))}
+              />
+            )}
+          />
+        </Form.Item>
+        <div
+          style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}
+        >
+          <Form.Item
+            label="Check-in"
+            validateStatus={errors.checkin ? "error" : ""}
+            help={errors.checkin?.message}
+          >
+            <Controller
+              name="checkin"
+              control={control}
+              rules={{ required: "Vui lòng chọn ngày" }}
+              render={({ field }) => (
+                <DatePicker {...field} style={{ width: "100%" }} format="DD/MM/YYYY" />
+              )}
+            />
+          </Form.Item>
+          <Form.Item
+            label="Check-out"
+            validateStatus={errors.checkout ? "error" : ""}
+            help={errors.checkout?.message}
+          >
+            <Controller
+              name="checkout"
+              control={control}
+              rules={{ required: "Vui lòng chọn ngày" }}
+              render={({ field }) => (
+                <DatePicker {...field} style={{ width: "100%" }} format="DD/MM/YYYY" />
+              )}
+            />
+          </Form.Item>
+          <Form.Item
+            label="Phòng"
+            validateStatus={errors.room ? "error" : ""}
+            help={errors.room?.message}
+          >
+            <Controller
+              name="room"
+              control={control}
+              rules={{ required: "Vui lòng chọn phòng" }}
+              render={({ field }) => (
+                <Select
+                  {...field}
+                  showSearch
+                  placeholder="-- Chọn phòng --"
+                  optionFilterProp="label"
+                  options={availableRooms.map((r) => ({
+                    value: r.number,
+                    label: `Phòng ${r.number} · ${r.type} · ${fmtVND(r.price)}/đêm`,
+                  }))}
+                />
+              )}
+            />
+          </Form.Item>
+          <Form.Item label="Số lượng phòng">
+            <Controller
+              name="quantity"
+              control={control}
+              render={({ field }) => (
+                <InputNumber {...field} min={1} style={{ width: "100%" }} />
+              )}
+            />
+          </Form.Item>
         </div>
-        <div className="modal-body">
-          <form ref={formRef}>
-            <input type="hidden" name="id" defaultValue={booking?.id || ''} />
-            <div className="form-grid">
-              <div className="form-field full">
-                <label>Khách hàng *</label>
-                <select name="customerId" required defaultValue={booking?.customerId || ''}>
-                  <option value="">-- Chọn khách hàng --</option>
-                  {data.customers.map(c => (
-                    <option key={c.id} value={c.id}>{c.name} · {c.phone}</option>
-                  ))}
-                </select>
-                <span className="err">Vui lòng chọn khách hàng</span>
-              </div>
-              <div className="form-field">
-                <label>Check-in *</label>
-                <input type="date" name="checkin" required defaultValue={booking?.checkin || TODAY} />
-              </div>
-              <div className="form-field">
-                <label>Check-out *</label>
-                <input type="date" name="checkout" required defaultValue={booking?.checkout || tomorrowStr} />
-              </div>
-              <div className="form-field">
-                <label>Phòng *</label>
-                <select name="room" required defaultValue={booking ? booking.rooms.split(',')[0].trim() : ''}>
-                  <option value="">-- Chọn phòng --</option>
-                  {data.rooms.filter(r => r.status !== 'maintenance').map(r => (
-                    <option key={r.number} value={r.number}>Phòng {r.number} · {r.type} · {fmtVND(r.price)}/đêm</option>
-                  ))}
-                </select>
-              </div>
-              <div className="form-field">
-                <label>Số lượng phòng</label>
-                <input type="number" name="quantity" defaultValue={booking ? booking.rooms.split(',').length : 1} min="1" />
-              </div>
-              <div className="form-field full">
-                <label>Ghi chú</label>
-                <textarea name="notes" rows="2" placeholder="Yêu cầu đặc biệt..." defaultValue={booking?.notes || ''} />
-              </div>
-            </div>
-          </form>
-        </div>
-        <div className="modal-foot">
-          <button className="btn" onClick={onClose}>Huỷ</button>
-          <button className="btn btn-primary" onClick={handleSubmit}>Lưu</button>
-        </div>
-      </div>
-    </div>
+        <Form.Item label="Ghi chú">
+          <Controller
+            name="notes"
+            control={control}
+            render={({ field }) => (
+              <Input.TextArea {...field} rows={2} placeholder="Yêu cầu đặc biệt..." />
+            )}
+          />
+        </Form.Item>
+      </Form>
+    </Modal>
   );
 }

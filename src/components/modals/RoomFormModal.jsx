@@ -1,75 +1,117 @@
-import React, { useRef } from 'react';
+import { Button, Form, Input, InputNumber, Modal, Select, Space } from 'antd';
+import { useEffect } from 'react';
+import { Controller, useForm } from 'react-hook-form';
 
-export default function RoomFormModal({ roomNumber, data, onClose, onSubmit, onDelete }) {
-  const formRef = useRef(null);
+export default function RoomFormModal({ open, roomNumber, data, onClose, onSubmit, onDelete }) {
+  const { control, handleSubmit, reset, formState: { errors } } = useForm();
   const room = roomNumber ? data.rooms.find(r => r.number === roomNumber) : null;
 
-  const handleSubmit = () => {
-    const form = formRef.current;
-    if (!form.checkValidity()) { form.reportValidity(); return; }
-    const d = Object.fromEntries(new FormData(form));
-    onSubmit(d);
-  };
+  useEffect(() => {
+    if (open) {
+      reset({
+        number: room?.number || '',
+        type: room?.type || 'Standard',
+        price: room?.price || undefined,
+        capacity: room?.capacity || '2 khách',
+        area: room?.area || '',
+        smoking: room ? String(room.smoking) : 'false',
+        status: room?.status || 'available',
+      });
+    } else {
+      reset();
+    }
+  }, [open, roomNumber]);
+
+  const onFormSubmit = (values) =>
+    onSubmit({ number_old: room?.number || '', ...values, price: values.price });
+
+  const footer = (
+    <Space>
+      {room && (
+        <Button danger type="primary" style={{ marginRight: 'auto' }} onClick={() => onDelete(room.number)}>
+          Xoá phòng
+        </Button>
+      )}
+      <Button onClick={onClose}>Huỷ</Button>
+      <Button type="primary" onClick={handleSubmit(onFormSubmit)}>Lưu</Button>
+    </Space>
+  );
 
   return (
-    <div className="modal-bg show">
-      <div className="modal">
-        <div className="modal-head">
-          <h3 className="modal-title">{room ? `Sửa phòng ${roomNumber}` : 'Thêm phòng'}</h3>
-          <button className="icon-btn" onClick={onClose}>✕</button>
+    <Modal open={open} title={room ? `Sửa phòng ${roomNumber}` : 'Thêm phòng'} onCancel={onClose} footer={footer} width={560} destroyOnHidden>
+      <Form layout="vertical">
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          <Form.Item label="Số phòng" validateStatus={errors.number ? 'error' : ''} help={errors.number?.message}>
+            <Controller
+              name="number"
+              control={control}
+              rules={{ required: 'Vui lòng nhập số phòng' }}
+              render={({ field }) => <Input {...field} placeholder="VD: 301" />}
+            />
+          </Form.Item>
+          <Form.Item label="Loại phòng" validateStatus={errors.type ? 'error' : ''} help={errors.type?.message}>
+            <Controller
+              name="type"
+              control={control}
+              rules={{ required: true }}
+              render={({ field }) => (
+                <Select {...field} options={['Standard', 'Deluxe', 'Suite', 'Family'].map(v => ({ value: v }))} />
+              )}
+            />
+          </Form.Item>
+          <Form.Item label="Giá/đêm (₫)" validateStatus={errors.price ? 'error' : ''} help={errors.price?.message}>
+            <Controller
+              name="price"
+              control={control}
+              rules={{ required: 'Vui lòng nhập giá' }}
+              render={({ field }) => (
+                <InputNumber
+                  {...field}
+                  min={0}
+                  step={10000}
+                  style={{ width: '100%' }}
+                  formatter={v => v ? new Intl.NumberFormat('vi-VN').format(v) : ''}
+                  parser={v => v.replace(/\D/g, '')}
+                />
+              )}
+            />
+          </Form.Item>
+          <Form.Item label="Sức chứa">
+            <Controller
+              name="capacity"
+              control={control}
+              render={({ field }) => (
+                <Select {...field} options={['1 khách', '2 khách', '3 khách', '4 khách', '5 khách'].map(v => ({ value: v }))} />
+              )}
+            />
+          </Form.Item>
+          <Form.Item label="Diện tích">
+            <Controller
+              name="area"
+              control={control}
+              render={({ field }) => <Input {...field} placeholder="VD: 32m²" />}
+            />
+          </Form.Item>
+          <Form.Item label="Hút thuốc">
+            <Controller
+              name="smoking"
+              control={control}
+              render={({ field }) => (
+                <Select {...field} options={[{ value: 'false', label: 'Không' }, { value: 'true', label: 'Có' }]} />
+              )}
+            />
+          </Form.Item>
+          <Form.Item label="Trạng thái" style={{ gridColumn: '1/-1' }}>
+            <Controller
+              name="status"
+              control={control}
+              render={({ field }) => (
+                <Select {...field} options={[{ value: 'available', label: 'Trống' }, { value: 'occupied', label: 'Đang ở' }, { value: 'maintenance', label: 'Bảo trì' }]} />
+              )}
+            />
+          </Form.Item>
         </div>
-        <div className="modal-body">
-          <form ref={formRef}>
-            <input type="hidden" name="number_old" defaultValue={room?.number || ''} />
-            <div className="form-grid">
-              <div className="form-field">
-                <label>Số phòng *</label>
-                <input type="text" name="number" required placeholder="VD: 301" defaultValue={room?.number || ''} />
-              </div>
-              <div className="form-field">
-                <label>Loại phòng *</label>
-                <select name="type" required defaultValue={room?.type || 'Standard'}>
-                  <option>Standard</option><option>Deluxe</option><option>Suite</option><option>Family</option>
-                </select>
-              </div>
-              <div className="form-field">
-                <label>Giá/đêm (₫) *</label>
-                <input type="number" name="price" required min="0" step="10000" defaultValue={room?.price || ''} />
-              </div>
-              <div className="form-field">
-                <label>Sức chứa</label>
-                <select name="capacity" defaultValue={room?.capacity || '2 khách'}>
-                  <option>1 khách</option><option>2 khách</option><option>3 khách</option><option>4 khách</option><option>5 khách</option>
-                </select>
-              </div>
-              <div className="form-field">
-                <label>Diện tích</label>
-                <input type="text" name="area" placeholder="VD: 32m²" defaultValue={room?.area || ''} />
-              </div>
-              <div className="form-field">
-                <label>Hút thuốc</label>
-                <select name="smoking" defaultValue={room ? String(room.smoking) : 'false'}>
-                  <option value="false">Không</option>
-                  <option value="true">Có</option>
-                </select>
-              </div>
-              <div className="form-field full">
-                <label>Trạng thái</label>
-                <select name="status" defaultValue={room?.status || 'available'}>
-                  <option value="available">Trống</option>
-                  <option value="occupied">Đang ở</option>
-                  <option value="maintenance">Bảo trì</option>
-                </select>
-              </div>
-            </div>
-          </form>
-        </div>
-        <div className="modal-foot">
-          {room && <button className="btn btn-danger" style={{ marginRight: 'auto' }} onClick={() => onDelete(room.number)}>Xoá phòng</button>}
-          <button className="btn" onClick={onClose}>Huỷ</button>
-          <button className="btn btn-primary" onClick={handleSubmit}>Lưu</button>
-        </div>
-      </div>
-    </div>
+      </Form>
+    </Modal>
   );
 }

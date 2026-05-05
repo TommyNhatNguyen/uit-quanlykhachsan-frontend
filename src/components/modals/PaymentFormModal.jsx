@@ -1,71 +1,99 @@
-import React, { useRef } from 'react';
+import { DatePicker, Form, InputNumber, Modal, Select } from 'antd';
+import dayjs from 'dayjs';
+import { useEffect } from 'react';
+import { Controller, useForm } from 'react-hook-form';
 import { fmtVND } from '../../utils';
 
-export default function PaymentFormModal({ data, onClose, onSubmit }) {
-  const formRef = useRef(null);
-  const now = new Date().toISOString().slice(0, 16);
+export default function PaymentFormModal({ open, data, onClose, onSubmit }) {
+  const { control, handleSubmit, reset, formState: { errors } } = useForm();
   const cashiers = data.employees.filter(e => e.position === 'Thu ngân' && e.working);
   const unpaidBookings = data.bookings.filter(b => b.payment !== 'paid' && b.status !== 'cancelled');
 
-  const handleSubmit = () => {
-    const form = formRef.current;
-    if (!form.checkValidity()) { form.reportValidity(); return; }
-    const d = Object.fromEntries(new FormData(form));
-    onSubmit(d);
-  };
+  useEffect(() => {
+    if (open) {
+      reset({ datetime: dayjs(), method: 'Tiền mặt', cashier: cashiers[0]?.name });
+    } else {
+      reset();
+    }
+  }, [open]);
+
+  const onFormSubmit = (values) => onSubmit({
+    bookingId: values.bookingId,
+    amount: values.amount,
+    method: values.method,
+    cashier: values.cashier,
+    datetime: values.datetime
+      ? values.datetime.format('YYYY-MM-DDTHH:mm')
+      : new Date().toISOString().slice(0, 16),
+  });
 
   return (
-    <div className="modal-bg show">
-      <div className="modal">
-        <div className="modal-head">
-          <h3 className="modal-title">Ghi nhận thanh toán</h3>
-          <button className="icon-btn" onClick={onClose}>✕</button>
+    <Modal open={open} title="Ghi nhận thanh toán" onCancel={onClose} onOk={handleSubmit(onFormSubmit)} okText="Lưu" cancelText="Huỷ" width={560} destroyOnHidden>
+      <Form layout="vertical">
+        <Form.Item label="Booking" validateStatus={errors.bookingId ? 'error' : ''} help={errors.bookingId?.message}>
+          <Controller
+            name="bookingId"
+            control={control}
+            rules={{ required: 'Vui lòng chọn booking' }}
+            render={({ field }) => (
+              <Select
+                {...field}
+                placeholder={unpaidBookings.length === 0 ? 'Không có booking chưa thanh toán' : '-- Chọn booking --'}
+                disabled={unpaidBookings.length === 0}
+                options={unpaidBookings.map(b => ({ value: b.id, label: `#${b.id} · ${b.customer} · ${fmtVND(b.amount)}` }))}
+              />
+            )}
+          />
+        </Form.Item>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          <Form.Item label="Số tiền (₫)" validateStatus={errors.amount ? 'error' : ''} help={errors.amount?.message}>
+            <Controller
+              name="amount"
+              control={control}
+              rules={{ required: 'Vui lòng nhập số tiền' }}
+              render={({ field }) => (
+                <InputNumber
+                  {...field}
+                  min={0}
+                  step={1000}
+                  style={{ width: '100%' }}
+                  formatter={v => v ? new Intl.NumberFormat('vi-VN').format(v) : ''}
+                  parser={v => v.replace(/\D/g, '')}
+                />
+              )}
+            />
+          </Form.Item>
+          <Form.Item label="Phương thức" validateStatus={errors.method ? 'error' : ''} help={errors.method?.message}>
+            <Controller
+              name="method"
+              control={control}
+              rules={{ required: true }}
+              render={({ field }) => (
+                <Select {...field} options={['Tiền mặt', 'Thẻ', 'QR', 'Chuyển khoản'].map(v => ({ value: v }))} />
+              )}
+            />
+          </Form.Item>
+          <Form.Item label="Thu ngân" validateStatus={errors.cashier ? 'error' : ''} help={errors.cashier?.message}>
+            <Controller
+              name="cashier"
+              control={control}
+              rules={{ required: 'Vui lòng chọn thu ngân' }}
+              render={({ field }) => (
+                <Select {...field} options={cashiers.map(e => ({ value: e.name, label: e.name }))} notFoundContent="Không có thu ngân" />
+              )}
+            />
+          </Form.Item>
+          <Form.Item label="Thời gian">
+            <Controller
+              name="datetime"
+              control={control}
+              render={({ field }) => (
+                <DatePicker {...field} showTime style={{ width: '100%' }} format="DD/MM/YYYY HH:mm" />
+              )}
+            />
+          </Form.Item>
         </div>
-        <div className="modal-body">
-          <form ref={formRef}>
-            <div className="form-grid">
-              <div className="form-field full">
-                <label>Booking *</label>
-                <select name="bookingId" required>
-                  {unpaidBookings.length === 0
-                    ? <option value="">Không có booking chưa thanh toán</option>
-                    : unpaidBookings.map(b => (
-                      <option key={b.id} value={b.id}>#{b.id} · {b.customer} · {fmtVND(b.amount)}</option>
-                    ))
-                  }
-                </select>
-              </div>
-              <div className="form-field">
-                <label>Số tiền (₫) *</label>
-                <input type="number" name="amount" required min="0" step="1000" />
-              </div>
-              <div className="form-field">
-                <label>Phương thức *</label>
-                <select name="method" required>
-                  <option>Tiền mặt</option>
-                  <option>Thẻ</option>
-                  <option>QR</option>
-                  <option>Chuyển khoản</option>
-                </select>
-              </div>
-              <div className="form-field">
-                <label>Thu ngân *</label>
-                <select name="cashier" required>
-                  {cashiers.map(e => <option key={e.id} value={e.name}>{e.name}</option>)}
-                </select>
-              </div>
-              <div className="form-field">
-                <label>Thời gian</label>
-                <input type="datetime-local" name="datetime" defaultValue={now} />
-              </div>
-            </div>
-          </form>
-        </div>
-        <div className="modal-foot">
-          <button className="btn" onClick={onClose}>Huỷ</button>
-          <button className="btn btn-primary" onClick={handleSubmit}>Lưu</button>
-        </div>
-      </div>
-    </div>
+      </Form>
+    </Modal>
   );
 }
