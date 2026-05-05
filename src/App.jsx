@@ -33,7 +33,7 @@ import PriceFormModal from "./components/modals/PriceFormModal";
 import RoomFormModal from "./components/modals/RoomFormModal";
 import ServiceFormModal from "./components/modals/ServiceFormModal";
 
-const API_BASE = "";
+const API_BASE = "https://pantry-anatomist-prepaid.ngrok-free.dev";
 
 export default function App() {
   const [data, setData] = useState(EMPTY_STATE);
@@ -44,7 +44,9 @@ export default function App() {
 
   useEffect(() => {
     axios
-      .get(`${API_BASE}/api/state`)
+      .get(`${API_BASE}/api/state`, {
+        headers: { "ngrok-skip-browser-warning": true },
+      })
       .then((res) => setData({ ...EMPTY_STATE, ...res.data }))
       .catch((e) => {
         console.warn("API không kết nối được, dùng chế độ offline:", e);
@@ -55,7 +57,9 @@ export default function App() {
   const persist = (newData) => {
     setData(newData);
     axios
-      .put(`${API_BASE}/api/state`, newData)
+      .put(`${API_BASE}/api/state`, newData, {
+        headers: { "ngrok-skip-browser-warning": true },
+      })
       .catch((e) => console.warn("saveState lỗi:", e));
   };
 
@@ -575,7 +579,13 @@ export default function App() {
       danger: false,
       onOk: async () => {
         try {
-          await axios.post(`${API_BASE}/api/state/reset`);
+          await axios.post(
+            `${API_BASE}/api/state/reset`,
+            {},
+            {
+              headers: { "ngrok-skip-browser-warning": true },
+            },
+          );
         } catch (e) {
           console.warn("Reset lỗi:", e);
         }
