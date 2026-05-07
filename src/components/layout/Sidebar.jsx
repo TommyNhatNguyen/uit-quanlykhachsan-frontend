@@ -7,6 +7,7 @@ import {
   DashboardOutlined,
   DollarOutlined,
   HomeOutlined,
+  IdcardOutlined,
   ShopOutlined,
   TagsOutlined,
   TeamOutlined,
@@ -104,6 +105,12 @@ export default function Sidebar() {
           icon: <TeamOutlined />,
           label: labelWithCount("Khách hàng", 0),
           onClick: () => navigate("/customers"),
+        },
+        {
+          key: "membership",
+          icon: <IdcardOutlined />,
+          label: labelWithCount("Quản lý thành viên", 0),
+          onClick: () => navigate("/membership"),
         },
         {
           key: "services",

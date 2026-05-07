@@ -1,6 +1,6 @@
-import api from './axios';
+import api from "./axios";
 
-const BASE = '/api/membership-types';
+const BASE = "/api/memberships";
 
 export const membershipTypesApi = {
   list: (page = 1, pageSize = 10) =>

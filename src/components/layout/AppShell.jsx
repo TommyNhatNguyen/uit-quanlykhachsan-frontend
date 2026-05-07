@@ -1,7 +1,8 @@
 import { Layout } from "antd";
 import { Route, Routes } from "react-router-dom";
 import BookingsPage from "../../pages/BookingsPage";
-import CustomersPage from "../../pages/CustomersPage";
+import CustomerPage from "../../pages/customer/CustomerPage";
+import MembershipPage from "../../pages/membership/MembershipPage";
 import DashboardPage from "../../pages/DashboardPage";
 import EmployeesPage from "../../pages/EmployeesPage";
 import HotelPage from "../../pages/hotel/HotelPage";
@@ -41,10 +42,11 @@ export default function AppShell() {
             <Route path="/room-list" element={<RoomsPage />} />
             <Route path="/room-type" element={<RoomTypePage />} />
             <Route path="/room-price" element={<RoomPricePage />} />
+            <Route path="/customers" element={<CustomerPage />} />
+            <Route path="/membership" element={<MembershipPage />} />
 
             <Route path="/" element={<DashboardPage />} />
             <Route path="/bookings" element={<BookingsPage />} />
-            <Route path="/customers" element={<CustomersPage />} />
             <Route path="/services" element={<ServicesPage />} />
             <Route path="/payments" element={<PaymentsPage />} />
             <Route path="/reports" element={<ReportsPage />} />
