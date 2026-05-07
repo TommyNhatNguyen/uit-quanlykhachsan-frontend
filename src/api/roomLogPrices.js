@@ -1,10 +1,10 @@
-import api from './axios';
+import api from "./axios";
 
-const BASE = '/api/room-log-prices';
+const BASE = "/api/room-price-logs";
 
 export const roomLogPricesApi = {
-  list: (page = 1, pageSize = 10) =>
-    api.get(BASE, { params: { page, page_size: pageSize } }),
+  list: (page = 1, pageSize = 10, filters = {}) =>
+    api.get(BASE, { params: { page, page_size: pageSize, ...filters } }),
   get: (id) => api.get(`${BASE}/${id}`),
   create: (data) => api.post(BASE, data),
   update: (id, data) => api.put(`${BASE}/${id}`, data),

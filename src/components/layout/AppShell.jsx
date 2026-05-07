@@ -9,10 +9,11 @@ import IntegrationPage from "../../pages/IntegrationPage";
 import PaymentsPage from "../../pages/PaymentsPage";
 import ReportsPage from "../../pages/ReportsPage";
 import RoomsPage from "../../pages/room/room-list/RoomListPage";
+import RoomPricePage from "../../pages/room/room-price/RoomPricePage";
+import RoomTypePage from "../../pages/room/room-type/RoomTypePage";
 import ServicesPage from "../../pages/ServicesPage";
 import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
-import RoomTypePage from "../../pages/room/room-type/RoomTypePage";
 
 export default function AppShell() {
   return (
@@ -39,7 +40,7 @@ export default function AppShell() {
             <Route path="/hotel" element={<HotelPage />} />
             <Route path="/room-list" element={<RoomsPage />} />
             <Route path="/room-type" element={<RoomTypePage />} />
-            <Route path="/room-price" element={<RoomsPage />} />
+            <Route path="/room-price" element={<RoomPricePage />} />
 
             <Route path="/" element={<DashboardPage />} />
             <Route path="/bookings" element={<BookingsPage />} />
