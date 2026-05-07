@@ -1,6 +1,9 @@
 import { ConfigProvider, message } from "antd";
+import { Navigate, Route, Routes } from "react-router-dom";
 import AppShell from "./components/layout/AppShell";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import "./index.css";
+import LoginPage from "./pages/auth/LoginPage";
 
 message.config({ duration: 3.7 });
 
@@ -16,10 +19,20 @@ const theme = {
   },
 };
 
+function ProtectedRoute() {
+  const { user } = useAuth();
+  return user ? <AppShell /> : <Navigate to="/login" replace />;
+}
+
 export default function App() {
   return (
     <ConfigProvider theme={theme}>
-      <AppShell />
+      <AuthProvider>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/*" element={<ProtectedRoute />} />
+        </Routes>
+      </AuthProvider>
     </ConfigProvider>
   );
 }
