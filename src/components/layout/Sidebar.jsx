@@ -1,5 +1,4 @@
 import {
-  ApiOutlined,
   AppstoreOutlined,
   BarChartOutlined,
   CalendarOutlined,
@@ -147,12 +146,6 @@ export default function Sidebar() {
           icon: <UserOutlined />,
           label: "Nhân viên",
           onClick: () => navigate("/employees"),
-        },
-        {
-          key: "integration",
-          icon: <ApiOutlined />,
-          label: "Kết nối DB",
-          onClick: () => navigate("/integration"),
         },
       ],
     },

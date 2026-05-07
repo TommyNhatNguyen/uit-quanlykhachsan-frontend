@@ -1,10 +1,13 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { customersApi } from "../api/customers";
 
-export function useCustomers({ page = 1, pageSize = 10 } = {}) {
+export function useCustomers({ page = 1, pageSize = 10, membershipTypeId } = {}) {
+  const filters = {};
+  if (membershipTypeId) filters.membership_type_id = membershipTypeId;
+
   return useQuery({
-    queryKey: ["customers", page, pageSize],
-    queryFn: () => customersApi.list(page, pageSize),
+    queryKey: ["customers", page, pageSize, filters],
+    queryFn: () => customersApi.list(page, pageSize, filters),
   });
 }
 

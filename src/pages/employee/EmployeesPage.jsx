@@ -1,19 +1,22 @@
 import { DeleteOutlined, EditOutlined, PlusOutlined } from "@ant-design/icons";
-import { Button, Space, Table, Tooltip, Typography } from "antd";
+import { Button, Space, Table, Tag, Tooltip, Typography } from "antd";
 import { useState } from "react";
-import MembershipPicker from "../../components/MembershipPicker";
-import useCustomers from "../../hooks/useCustomers";
+import useEmployees from "../../hooks/useEmployees";
 import { DeleteFormTrigger } from "./DeleteForm";
 import { UpsertFormTrigger } from "./UpsertForm";
 
-const SEX_LABEL = { 1: "Nam", 2: "Nữ", 3: "Khác" };
+const ROLE_LABEL = {
+  staff: "Nhân viên",
+  admin: "Quản lý",
+  accountant: "Kế toán",
+};
+const ROLE_COLOR = { staff: "default", admin: "blue", accountant: "green" };
 
-export default function CustomerPage() {
+export default function EmployeesPage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const [membershipTypeId, setMembershipTypeId] = useState(null);
 
-  const { isLoading, ...result } = useCustomers({ page, pageSize, membershipTypeId });
+  const { isLoading, ...result } = useEmployees({ page, pageSize });
   const data = result.data?.data;
   const total = result.data?.total;
 
@@ -21,29 +24,17 @@ export default function CustomerPage() {
     <div>
       <div className="flex items-center justify-between gap-2">
         <div>
-          <Typography.Title level={1}>Quản lý khách hàng</Typography.Title>
+          <Typography.Title level={1}>Quản lý nhân viên</Typography.Title>
           <Typography.Text type="secondary">
-            Danh sách khách hàng
+            Danh sách nhân sự, vị trí và trạng thái làm việc
           </Typography.Text>
         </div>
         <Space>
           <UpsertFormTrigger>
             <Button type="primary" icon={<PlusOutlined />}>
-              Thêm khách hàng
+              Thêm nhân viên
             </Button>
           </UpsertFormTrigger>
-        </Space>
-      </div>
-      <div className="mb-3">
-        <Space>
-          <Typography.Text type="secondary">Lọc theo hạng thành viên:</Typography.Text>
-          <MembershipPicker
-            value={membershipTypeId}
-            onChange={(v) => { setMembershipTypeId(v ?? null); setPage(1); }}
-            placeholder="Tất cả hạng"
-            allowClear
-            style={{ minWidth: 200 }}
-          />
         </Space>
       </div>
       <div>
@@ -68,23 +59,6 @@ export default function CustomerPage() {
               key: "phone",
             },
             {
-              title: "Giới tính",
-              dataIndex: "sex",
-              key: "sex",
-              render: (v) => SEX_LABEL[v] ?? "—",
-            },
-            {
-              title: "CCCD / Hộ chiếu",
-              dataIndex: "identification_id",
-              key: "identification_id",
-            },
-            {
-              title: "Email",
-              dataIndex: "email",
-              key: "email",
-              render: (v) => v || "—",
-            },
-            {
               title: "Ngày sinh",
               dataIndex: "birthday",
               key: "birthday",
@@ -92,9 +66,35 @@ export default function CustomerPage() {
                 v ? new Date(v).toLocaleDateString("vi-VN") : "—",
             },
             {
-              title: "Hạng thành viên",
-              key: "membership",
-              render: (_, record) => record.membership_type?.name ?? "—",
+              title: "Vị trí",
+              dataIndex: "position",
+              key: "position",
+              render: (v) => v || "—",
+            },
+            {
+              title: "Vai trò",
+              dataIndex: "role",
+              key: "role",
+              render: (v) => (
+                <Tag color={ROLE_COLOR[v]}>{ROLE_LABEL[v] ?? v}</Tag>
+              ),
+            },
+            {
+              title: "Ngày bắt đầu",
+              dataIndex: "start_working_date",
+              key: "start_working_date",
+              render: (v) =>
+                v ? new Date(v).toLocaleDateString("vi-VN") : "—",
+            },
+            {
+              title: "Trạng thái",
+              dataIndex: "is_working",
+              key: "is_working",
+              render: (v) => (
+                <Tag color={v ? "green" : "default"}>
+                  {v ? "Đang làm" : "Đã nghỉ"}
+                </Tag>
+              ),
             },
             {
               title: "Thao tác",
@@ -117,13 +117,13 @@ export default function CustomerPage() {
           ]}
           rowKey="id"
           size="small"
-          locale={{ emptyText: "Không có khách hàng nào" }}
+          locale={{ emptyText: "Không có nhân viên nào" }}
           pagination={{
             current: page,
             pageSize,
             total,
             showSizeChanger: true,
-            showTotal: (total) => `Tổng ${total} khách hàng`,
+            showTotal: (total) => `Tổng ${total} nhân viên`,
             onChange: (newPage, newPageSize) => {
               setPage(newPage);
               setPageSize(newPageSize);
