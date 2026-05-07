@@ -1,9 +1,5 @@
 import { ConfigProvider, message } from "antd";
 import AppShell from "./components/layout/AppShell";
-import { AppStateProvider } from "./contexts/AppStateContext";
-import { BookingProvider } from "./contexts/BookingContext";
-import { CustomerProvider } from "./contexts/CustomerContext";
-import { RoomProvider } from "./contexts/RoomContext";
 import "./index.css";
 
 message.config({ duration: 3.7 });
@@ -23,15 +19,7 @@ const theme = {
 export default function App() {
   return (
     <ConfigProvider theme={theme}>
-      <AppStateProvider>
-        <BookingProvider>
-          <CustomerProvider>
-            <RoomProvider>
-              <AppShell />
-            </RoomProvider>
-          </CustomerProvider>
-        </BookingProvider>
-      </AppStateProvider>
+      <AppShell />
     </ConfigProvider>
   );
 }

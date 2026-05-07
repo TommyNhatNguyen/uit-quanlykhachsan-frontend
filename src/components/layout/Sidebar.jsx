@@ -5,26 +5,24 @@ import {
   CalendarOutlined,
   CreditCardOutlined,
   DashboardOutlined,
+  DollarOutlined,
   HomeOutlined,
-  ReloadOutlined,
   ShopOutlined,
+  TagsOutlined,
   TeamOutlined,
+  UnorderedListOutlined,
   UserOutlined,
 } from "@ant-design/icons";
-import { Badge, Button, Layout, Menu, Typography } from "antd";
+import { Badge, Layout, Menu, Typography } from "antd";
 import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useAppStateContext } from "../../contexts/AppStateContext";
 
 const { Sider } = Layout;
 
 export default function Sidebar() {
-  const { data, resetData: onReset } = useAppStateContext();
+  const data = {};
   const navigate = useNavigate();
   const location = useLocation();
-  const activeBookings = data.bookings.filter(
-    (b) => !["cancelled", "checked_out"].includes(b.status),
-  ).length;
 
   const selectedKey =
     location.pathname === "/" ? "dashboard" : location.pathname.slice(1);
@@ -67,27 +65,50 @@ export default function Sidebar() {
           onClick: () => navigate("/hotel"),
         },
         {
-          key: "bookings",
-          icon: <CalendarOutlined />,
-          label: labelWithCount("Đặt phòng", activeBookings),
-          onClick: () => navigate("/bookings"),
-        },
-        {
           key: "rooms",
           icon: <HomeOutlined />,
-          label: labelWithCount("Phòng", data.rooms.length),
-          onClick: () => navigate("/rooms"),
+          label: labelWithCount("Quản lý phòng", 0),
+          navigate: "/room",
+          children: [
+            {
+              key: "room-list",
+              icon: <UnorderedListOutlined />,
+              label: labelWithCount("Danh sách phòng", 0),
+              navigate: "/room-list",
+              onClick: () => navigate("/room-list"),
+            },
+            {
+              key: "room-type",
+              icon: <TagsOutlined />,
+              label: labelWithCount("Cấu hình loại phòng", 0),
+              navigate: "/room-type",
+              onClick: () => navigate("/room-type"),
+            },
+            {
+              key: "room-price",
+              icon: <DollarOutlined />,
+              label: labelWithCount("Cấu hình giá phòng", 0),
+              navigate: "/room-price",
+              onClick: () => navigate("/room-price"),
+            },
+          ],
+        },
+        {
+          key: "bookings",
+          icon: <CalendarOutlined />,
+          label: labelWithCount("Đặt phòng", 0),
+          onClick: () => navigate("/bookings"),
         },
         {
           key: "customers",
           icon: <TeamOutlined />,
-          label: labelWithCount("Khách hàng", data.customers.length),
+          label: labelWithCount("Khách hàng", 0),
           onClick: () => navigate("/customers"),
         },
         {
           key: "services",
           icon: <AppstoreOutlined />,
-          label: labelWithCount("Dịch vụ", data.services.length),
+          label: labelWithCount("Dịch vụ", 0),
           onClick: () => navigate("/services"),
         },
       ],
@@ -189,25 +210,6 @@ export default function Sidebar() {
         items={items}
         style={{ border: "none", fontSize: 13 }}
       />
-
-      <div
-        style={{
-          padding: "12px 16px",
-          borderTop: "1px solid #f0f0f0",
-          marginTop: 8,
-        }}
-      >
-        <Button
-          icon={<ReloadOutlined />}
-          type="text"
-          danger
-          block
-          onClick={onReset}
-          style={{ textAlign: "left", justifyContent: "flex-start" }}
-        >
-          Reset dữ liệu
-        </Button>
-      </div>
     </Sider>
   );
 }
