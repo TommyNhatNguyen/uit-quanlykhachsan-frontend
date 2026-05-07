@@ -2,5 +2,9 @@ import axios from "axios";
 
 export const axiosInstance = axios.create({
   baseURL: "http://127.0.0.1:8000",
-  headers: { "ngrok-skip-browser-warning": true },
+  headers: {
+    "ngrok-skip-browser-warning": true,
+    "Content-Type": "application/json; charset=utf-8",
+  },
+  responseEncoding: "utf-8",
 });

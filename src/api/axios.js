@@ -1,4 +1,4 @@
-import { axiosInstance } from '../config/axiosInstance';
+import { axiosInstance } from "../config/axiosInstance";
 
 axiosInstance.interceptors.response.use(
   (res) => res.data,
@@ -6,9 +6,9 @@ axiosInstance.interceptors.response.use(
     const msg =
       err.response?.data?.detail ||
       err.response?.data?.error ||
-      'Lỗi không xác định';
+      "Lỗi không xác định";
     return Promise.reject(new Error(msg));
-  }
+  },
 );
 
 export default axiosInstance;
