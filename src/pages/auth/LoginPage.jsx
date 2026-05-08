@@ -10,7 +10,7 @@ export default function LoginPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (user) navigate("/", { replace: true });
+    if (user) navigate("/employees", { replace: true });
   }, [user, navigate]);
 
   const {
