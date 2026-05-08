@@ -122,12 +122,8 @@ export default function UpsertForm({ id, ...props }) {
 
 export const UpsertFormTrigger = ({ children, id }) => {
   const [open, setOpen] = useState(false);
-  const _onClick = () => {
-    setOpen(true);
-  };
-  const _onClose = () => {
-    setOpen(false);
-  };
+  const _onClick = () => { setOpen(true); };
+  const _onClose = () => { setOpen(false); };
   return (
     <>
       {React.cloneElement(children, { onClick: _onClick })}
