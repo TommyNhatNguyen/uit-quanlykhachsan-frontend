@@ -1,6 +1,7 @@
 import { DeleteOutlined, EditOutlined, PlusOutlined } from "@ant-design/icons";
-import { Button, InputNumber, Space, Table, Tag, Tooltip, Typography } from "antd";
+import { Button, Space, Table, Tag, Tooltip, Typography } from "antd";
 import { useState } from "react";
+import BookingDetailPicker from "../../components/BookingDetailPicker";
 import EmployeePicker from "../../components/EmployeePicker";
 import usePayments from "../../hooks/usePayments";
 import { DeleteFormTrigger } from "./DeleteForm";
@@ -63,13 +64,12 @@ export default function PaymentPage() {
       <div className="mb-3">
         <Space wrap>
           <Space>
-            <Typography.Text type="secondary">Chi tiết đặt phòng ID:</Typography.Text>
-            <InputNumber
+            <Typography.Text type="secondary">Chi tiết đặt phòng:</Typography.Text>
+            <BookingDetailPicker
               value={bookingDetailId}
               onChange={(v) => { setBookingDetailId(v ?? null); setPage(1); }}
-              placeholder="ID"
-              controls={false}
-              style={{ width: 90 }}
+              placeholder="Tất cả"
+              style={{ minWidth: 280 }}
             />
           </Space>
           <Space>

@@ -6,7 +6,7 @@ export const bookingsApi = {
   list: (page = 1, pageSize = 10) =>
     api.get(BASE, { params: { page, page_size: pageSize } }),
   get: (id) => api.get(`${BASE}/${id}`),
-  create: (data) => api.post(BASE, data),
+  create: (data) => api.post(`${BASE}/with-details`, data),
   update: (id, data) => api.put(`${BASE}/${id}`, data),
   delete: (id) => api.delete(`${BASE}/${id}`),
 };

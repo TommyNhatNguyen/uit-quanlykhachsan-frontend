@@ -17,6 +17,7 @@ import dayjs from "dayjs";
 import { useEffect, useState } from "react";
 import { Controller, useFieldArray, useForm } from "react-hook-form";
 import CustomerPicker from "../../components/CustomerPicker";
+import MembershipPicker from "../../components/MembershipPicker";
 import RoomPicker from "../../components/RoomPicker";
 import { useBookingDetail, useBookingUpsert } from "../../hooks/useBookings";
 import { useCustomerUpsert } from "../../hooks/useCustomers";
@@ -26,6 +27,12 @@ const STATUS_OPTIONS = [
   { value: "CHECKIN", label: "Check-in" },
   { value: "CHECKOUT", label: "Check-out" },
   { value: "CANCELED", label: "Huỷ" },
+];
+
+const SEX_OPTIONS = [
+  { label: "Nam", value: 1 },
+  { label: "Nữ", value: 2 },
+  { label: "Khác", value: 3 },
 ];
 
 const fmtVND = (v) =>
@@ -49,8 +56,10 @@ function UpsertForm({ id, open, onClose }) {
   const isEdit = !!id;
   const queryClient = useQueryClient();
   const result = useBookingDetail(id);
-  const { mutateAsync: mutateBooking, isPending: isBookingPending } = useBookingUpsert();
-  const { mutateAsync: mutateCustomer, isPending: isCustomerPending } = useCustomerUpsert();
+  const { mutateAsync: mutateBooking, isPending: isBookingPending } =
+    useBookingUpsert();
+  const { mutateAsync: mutateCustomer, isPending: isCustomerPending } =
+    useCustomerUpsert();
   const [createNewCustomer, setCreateNewCustomer] = useState(false);
 
   const isPending = isBookingPending || isCustomerPending;
@@ -60,12 +69,18 @@ function UpsertForm({ id, open, onClose }) {
     handleSubmit,
     reset,
     watch,
+    clearErrors,
     formState: { errors },
   } = useForm({
     defaultValues: {
       customer_id: null,
       new_customer_name: "",
-      new_customer_phone: "",
+      new_customer_phone: null,
+      new_customer_sex: null,
+      new_customer_identification_id: "",
+      new_customer_email: "",
+      new_customer_birthday: null,
+      new_customer_membership_type_id: null,
       notes: "",
       is_fully_paid: false,
       booking_details: [],
@@ -76,7 +91,6 @@ function UpsertForm({ id, open, onClose }) {
     control,
     name: "booking_details",
   });
-
   const details = watch("booking_details");
 
   useEffect(() => {
@@ -84,7 +98,12 @@ function UpsertForm({ id, open, onClose }) {
       reset({
         customer_id: result.data.customer_id,
         new_customer_name: "",
-        new_customer_phone: "",
+        new_customer_phone: null,
+        new_customer_sex: null,
+        new_customer_identification_id: "",
+        new_customer_email: "",
+        new_customer_birthday: null,
+        new_customer_membership_type_id: null,
         notes: result.data.notes || "",
         is_fully_paid: result.data.is_fully_paid,
         booking_details: (result.data.booking_details ?? []).map((d) => ({
@@ -99,13 +118,44 @@ function UpsertForm({ id, open, onClose }) {
   }, [result.data]);
 
   const onSubmit = async (values) => {
+    if (!createNewCustomer) {
+      if (!values.customer_id) {
+        message.warning("Vui lòng chọn khách hàng");
+        return;
+      }
+    } else {
+      if (!values.new_customer_name) {
+        message.warning("Vui lòng nhập họ tên khách hàng");
+        return;
+      }
+      if (!values.new_customer_phone) {
+        message.warning("Vui lòng nhập số điện thoại khách hàng");
+        return;
+      }
+      if (!values.new_customer_sex) {
+        message.warning("Vui lòng chọn giới tính");
+        return;
+      }
+      if (!values.new_customer_identification_id) {
+        message.warning("Vui lòng nhập CCCD / Hộ chiếu");
+        return;
+      }
+    }
+
     let customerId = values.customer_id;
 
     if (createNewCustomer) {
       try {
         const newCustomer = await mutateCustomer({
           name: values.new_customer_name,
-          phone: Number(values.new_customer_phone),
+          phone: values.new_customer_phone,
+          sex: values.new_customer_sex,
+          identification_id: values.new_customer_identification_id,
+          email: values.new_customer_email || null,
+          birthday: values.new_customer_birthday
+            ? values.new_customer_birthday.toISOString()
+            : null,
+          membership_type_id: values.new_customer_membership_type_id || null,
         });
         customerId = newCustomer.id;
         queryClient.invalidateQueries({ queryKey: ["customers"] });
@@ -143,7 +193,9 @@ function UpsertForm({ id, open, onClose }) {
       });
       queryClient.invalidateQueries({ queryKey: ["bookings"] });
       onClose();
-      message.success(isEdit ? "Cập nhật đặt phòng thành công" : "Tạo đặt phòng thành công");
+      message.success(
+        isEdit ? "Cập nhật đặt phòng thành công" : "Tạo đặt phòng thành công",
+      );
     } catch {
       message.error(isEdit ? "Cập nhật thất bại" : "Tạo đặt phòng thất bại");
     }
@@ -171,72 +223,38 @@ function UpsertForm({ id, open, onClose }) {
       width={920}
     >
       <Form layout="vertical" style={{ paddingTop: 8 }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0 16px" }}>
-          {/* Customer field — picker OR inline create */}
-          <div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-              <Form.Item
-                label="Khách hàng"
-                required
-                validateStatus={
-                  (!createNewCustomer && errors.customer_id) ||
-                  (createNewCustomer && (errors.new_customer_name || errors.new_customer_phone))
-                    ? "error"
-                    : ""
-                }
-                style={{ flex: 1, marginBottom: 0 }}
-              >
-                {!createNewCustomer ? (
-                  <Controller
-                    name="customer_id"
-                    control={control}
-                    rules={{ required: "Bắt buộc" }}
-                    render={({ field }) => (
-                      <CustomerPicker {...field} style={{ width: "100%" }} />
-                    )}
+        {/* ── Customer row ── */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: "0 16px",
+          }}
+        >
+          <Form.Item
+            label="Khách hàng"
+            required={!createNewCustomer}
+            validateStatus={
+              !createNewCustomer && errors.customer_id ? "error" : ""
+            }
+            help={!createNewCustomer ? errors.customer_id?.message : undefined}
+          >
+            <Controller
+              name="customer_id"
+              control={control}
+              render={({ field }) =>
+                createNewCustomer ? (
+                  <CustomerPicker
+                    {...field}
+                    disabled
+                    style={{ width: "100%" }}
                   />
                 ) : (
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <Controller
-                      name="new_customer_name"
-                      control={control}
-                      rules={createNewCustomer ? { required: "Bắt buộc" } : {}}
-                      render={({ field }) => (
-                        <Input
-                          {...field}
-                          placeholder="Họ tên"
-                          status={errors.new_customer_name ? "error" : ""}
-                        />
-                      )}
-                    />
-                    <Controller
-                      name="new_customer_phone"
-                      control={control}
-                      rules={createNewCustomer ? { required: "Bắt buộc" } : {}}
-                      render={({ field }) => (
-                        <Input
-                          {...field}
-                          placeholder="SĐT"
-                          style={{ width: 120 }}
-                          status={errors.new_customer_phone ? "error" : ""}
-                        />
-                      )}
-                    />
-                  </div>
-                )}
-              </Form.Item>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6 }}>
-              <Switch
-                size="small"
-                checked={createNewCustomer}
-                onChange={setCreateNewCustomer}
-              />
-              <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                Tạo khách hàng mới
-              </Typography.Text>
-            </div>
-          </div>
+                  <CustomerPicker {...field} style={{ width: "100%" }} />
+                )
+              }
+            />
+          </Form.Item>
 
           <Form.Item label="Ghi chú">
             <Controller
@@ -248,6 +266,164 @@ function UpsertForm({ id, open, onClose }) {
             />
           </Form.Item>
         </div>
+
+        {/* Toggle */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            marginBottom: 12,
+          }}
+        >
+          <Switch
+            size="small"
+            checked={createNewCustomer}
+            onChange={(val) => {
+              setCreateNewCustomer(val);
+              if (val) clearErrors("customer_id");
+            }}
+          />
+          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            Tạo khách hàng mới
+          </Typography.Text>
+        </div>
+
+        {/* ── New customer fields ── */}
+        {createNewCustomer && (
+          <div
+            style={{
+              border: "1px solid #e0e0e0",
+              borderRadius: 8,
+              padding: "12px 16px",
+              marginBottom: 12,
+              background: "#fafafa",
+            }}
+          >
+            <Typography.Text
+              strong
+              style={{ display: "block", marginBottom: 12 }}
+            >
+              Thông tin khách hàng mới
+            </Typography.Text>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: "0 16px",
+              }}
+            >
+              <Form.Item
+                label="Họ tên"
+                required
+                validateStatus={errors.new_customer_name ? "error" : ""}
+                help={errors.new_customer_name?.message}
+              >
+                <Controller
+                  name="new_customer_name"
+                  control={control}
+                  render={({ field }) => (
+                    <Input {...field} placeholder="VD: Nguyễn Văn A" />
+                  )}
+                />
+              </Form.Item>
+
+              <Form.Item
+                label="Số điện thoại"
+                required
+                validateStatus={errors.new_customer_phone ? "error" : ""}
+                help={errors.new_customer_phone?.message}
+              >
+                <Controller
+                  name="new_customer_phone"
+                  control={control}
+                  render={({ field }) => (
+                    <InputNumber
+                      {...field}
+                      placeholder="VD: 0909090909"
+                      controls={false}
+                      style={{ width: "100%" }}
+                    />
+                  )}
+                />
+              </Form.Item>
+
+              <Form.Item
+                label="Giới tính"
+                required
+                validateStatus={errors.new_customer_sex ? "error" : ""}
+                help={errors.new_customer_sex?.message}
+              >
+                <Controller
+                  name="new_customer_sex"
+                  control={control}
+                  render={({ field }) => (
+                    <Select
+                      {...field}
+                      options={SEX_OPTIONS}
+                      placeholder="Chọn giới tính"
+                    />
+                  )}
+                />
+              </Form.Item>
+
+              <Form.Item
+                label="CCCD / Hộ chiếu"
+                required
+                validateStatus={
+                  errors.new_customer_identification_id ? "error" : ""
+                }
+                help={errors.new_customer_identification_id?.message}
+              >
+                <Controller
+                  name="new_customer_identification_id"
+                  control={control}
+                  render={({ field }) => (
+                    <Input {...field} placeholder="VD: 012345678901" />
+                  )}
+                />
+              </Form.Item>
+
+              <Form.Item label="Email">
+                <Controller
+                  name="new_customer_email"
+                  control={control}
+                  render={({ field }) => (
+                    <Input {...field} placeholder="VD: example@email.com" />
+                  )}
+                />
+              </Form.Item>
+
+              <Form.Item label="Ngày sinh">
+                <Controller
+                  name="new_customer_birthday"
+                  control={control}
+                  render={({ field }) => (
+                    <DatePicker
+                      {...field}
+                      style={{ width: "100%" }}
+                      format="DD/MM/YYYY"
+                      placeholder="Chọn ngày sinh"
+                    />
+                  )}
+                />
+              </Form.Item>
+
+              <Form.Item
+                label="Hạng thành viên"
+                style={{ gridColumn: "1 / -1" }}
+              >
+                <Controller
+                  name="new_customer_membership_type_id"
+                  control={control}
+                  render={({ field }) => (
+                    <MembershipPicker {...field} style={{ width: "100%" }} />
+                  )}
+                />
+              </Form.Item>
+            </div>
+          </div>
+        )}
 
         <Form.Item label="Đã thanh toán đầy đủ" style={{ marginBottom: 0 }}>
           <Controller
@@ -261,13 +437,26 @@ function UpsertForm({ id, open, onClose }) {
 
         <Divider style={{ margin: "16px 0 12px" }} />
 
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+        {/* ── Room details ── */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginBottom: 10,
+          }}
+        >
           <Typography.Text strong>Danh sách phòng đặt</Typography.Text>
           <Button
             size="small"
             icon={<PlusOutlined />}
             onClick={() =>
-              append({ room_id: null, dateRange: null, price_per_night: 0, status: "BOOKED" })
+              append({
+                room_id: null,
+                dateRange: null,
+                price_per_night: 0,
+                status: "BOOKED",
+              })
             }
           >
             Thêm phòng
@@ -285,18 +474,29 @@ function UpsertForm({ id, open, onClose }) {
                 padding: "0 2px",
               }}
             >
-              {["Phòng", "Check-in → Check-out", "Đêm", "Giá/đêm", "Tổng phòng", ...(isEdit ? ["Trạng thái"] : []), ""].map(
-                (h, i) => (
-                  <Typography.Text key={i} type="secondary" style={{ fontSize: 12 }}>
-                    {h}
-                  </Typography.Text>
-                ),
-              )}
+              {[
+                "Phòng",
+                "Check-in → Check-out",
+                "Đêm",
+                "Giá/đêm",
+                "Tổng phòng",
+                ...(isEdit ? ["Trạng thái"] : []),
+                "",
+              ].map((h, i) => (
+                <Typography.Text
+                  key={i}
+                  type="secondary"
+                  style={{ fontSize: 12 }}
+                >
+                  {h}
+                </Typography.Text>
+              ))}
             </div>
 
             {fields.map((field, index) => {
               const dr = details[index]?.dateRange;
-              const nights = dr?.[0] && dr?.[1] ? dr[1].diff(dr[0], "day") : 0;
+              const nights =
+                dr?.[0] && dr?.[1] ? dr[1].diff(dr[0], "day") : 0;
               const total = nights * (details[index]?.price_per_night || 0);
 
               return (
@@ -315,7 +515,11 @@ function UpsertForm({ id, open, onClose }) {
                     control={control}
                     rules={{ required: true }}
                     render={({ field }) => (
-                      <RoomPicker {...field} placeholder="Chọn phòng" style={{ width: "100%" }} />
+                      <RoomPicker
+                        {...field}
+                        placeholder="Chọn phòng"
+                        style={{ width: "100%" }}
+                      />
                     )}
                   />
                   <Controller
@@ -343,12 +547,20 @@ function UpsertForm({ id, open, onClose }) {
                         style={{ width: "100%" }}
                         controls={false}
                         min={0}
-                        formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ".")}
+                        formatter={(v) =>
+                          `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ".")
+                        }
                         parser={(v) => v?.replace(/\./g, "") ?? "0"}
                       />
                     )}
                   />
-                  <Typography.Text style={{ textAlign: "right", whiteSpace: "nowrap", fontSize: 13 }}>
+                  <Typography.Text
+                    style={{
+                      textAlign: "right",
+                      whiteSpace: "nowrap",
+                      fontSize: 13,
+                    }}
+                  >
                     {fmtVND(total)}
                   </Typography.Text>
                   {isEdit && (
@@ -356,7 +568,11 @@ function UpsertForm({ id, open, onClose }) {
                       name={`booking_details.${index}.status`}
                       control={control}
                       render={({ field }) => (
-                        <Select {...field} options={STATUS_OPTIONS} size="small" />
+                        <Select
+                          {...field}
+                          options={STATUS_OPTIONS}
+                          size="small"
+                        />
                       )}
                     />
                   )}

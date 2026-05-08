@@ -3,6 +3,7 @@ import { DatePicker, Form, InputNumber, message, Modal, Select } from "antd";
 import dayjs from "dayjs";
 import { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
+import BookingDetailPicker from "../../components/BookingDetailPicker";
 import EmployeePicker from "../../components/EmployeePicker";
 import { usePaymentDetail, usePaymentUpsert } from "../../hooks/usePayments";
 
@@ -52,7 +53,9 @@ function UpsertForm({ id, open, onClose }) {
         total_payment: result.data.total_payment,
         payment_method: result.data.payment_method,
         booking_detail_id: result.data.booking_detail_id,
-        created_at: result.data.created_at ? dayjs(result.data.created_at) : dayjs(),
+        created_at: result.data.created_at
+          ? dayjs(result.data.created_at)
+          : dayjs(),
       });
     }
   }, [result.data]);
@@ -69,10 +72,16 @@ function UpsertForm({ id, open, onClose }) {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: ["payments"] });
           onClose();
-          message.success(isEdit ? "Cập nhật thanh toán thành công" : "Thêm thanh toán thành công");
+          message.success(
+            isEdit
+              ? "Cập nhật thanh toán thành công"
+              : "Thêm thanh toán thành công",
+          );
         },
         onError: () => {
-          message.error(isEdit ? "Cập nhật thất bại" : "Thêm thanh toán thất bại");
+          message.error(
+            isEdit ? "Cập nhật thất bại" : "Thêm thanh toán thất bại",
+          );
         },
       },
     );
@@ -107,7 +116,7 @@ function UpsertForm({ id, open, onClose }) {
         </Form.Item>
 
         <Form.Item
-          label="Chi tiết đặt phòng (ID)"
+          label="Chi tiết đặt phòng"
           required
           validateStatus={errors.booking_detail_id ? "error" : ""}
           help={errors.booking_detail_id?.message}
@@ -117,12 +126,7 @@ function UpsertForm({ id, open, onClose }) {
             control={control}
             rules={{ required: "Bắt buộc" }}
             render={({ field }) => (
-              <InputNumber
-                {...field}
-                style={{ width: "100%" }}
-                controls={false}
-                placeholder="ID chi tiết đặt phòng"
-              />
+              <BookingDetailPicker {...field} style={{ width: "100%" }} />
             )}
           />
         </Form.Item>
@@ -138,7 +142,11 @@ function UpsertForm({ id, open, onClose }) {
             control={control}
             rules={{ required: "Bắt buộc" }}
             render={({ field }) => (
-              <Select {...field} options={PAYMENT_METHOD_OPTIONS} placeholder="Chọn phương thức" />
+              <Select
+                {...field}
+                options={PAYMENT_METHOD_OPTIONS}
+                placeholder="Chọn phương thức"
+              />
             )}
           />
         </Form.Item>
@@ -152,7 +160,10 @@ function UpsertForm({ id, open, onClose }) {
           <Controller
             name="total_payment"
             control={control}
-            rules={{ required: "Bắt buộc", min: { value: 0, message: "Phải ≥ 0" } }}
+            rules={{
+              required: "Bắt buộc",
+              min: { value: 0, message: "Phải ≥ 0" },
+            }}
             render={({ field }) => (
               <InputNumber
                 {...field}
