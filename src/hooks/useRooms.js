@@ -1,7 +1,13 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { roomsApi } from "../api/rooms";
 
-export function useRooms({ page = 1, pageSize = 10, roomTypeId, priceFrom, priceTo } = {}) {
+export function useRooms({
+  page = 1,
+  pageSize = 10,
+  roomTypeId,
+  priceFrom,
+  priceTo,
+} = {}) {
   const filters = {};
   if (roomTypeId) filters.room_type_id = roomTypeId;
   if (priceFrom != null) filters.price_from = priceFrom;
@@ -35,5 +41,13 @@ export function useRoomUpsert() {
 export function useRoomDelete() {
   return useMutation({
     mutationFn: (id) => roomsApi.delete(id),
+  });
+}
+
+export function useRoomUpdatePrice() {
+  return useMutation({
+    mutationFn: (data) => {
+      return roomsApi.updatePrice(data);
+    },
   });
 }

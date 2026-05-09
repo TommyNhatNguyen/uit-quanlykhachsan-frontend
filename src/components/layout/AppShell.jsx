@@ -2,7 +2,7 @@ import { Layout } from "antd";
 import { Route, Routes } from "react-router-dom";
 import BookingsPage from "../../pages/booking/BookingsPage";
 import CustomerPage from "../../pages/customer/CustomerPage";
-import DashboardPage from "../../pages/DashboardPage";
+// import DashboardPage from "../../pages/DashboardPage";
 import EmployeesPage from "../../pages/employee/EmployeesPage";
 import HotelPage from "../../pages/hotel/HotelPage";
 import IntegrationPage from "../../pages/IntegrationPage";
@@ -12,7 +12,9 @@ import ReportsPage from "../../pages/ReportsPage";
 import RoomsPage from "../../pages/room/room-list/RoomListPage";
 import RoomPricePage from "../../pages/room/room-price/RoomPricePage";
 import RoomTypePage from "../../pages/room/room-type/RoomTypePage";
-import ServicesPage from "../../pages/ServicesPage";
+import ServiceDetailsPage from "../../pages/services/service-details/ServiceDetailsPage";
+import ServiceListPage from "../../pages/services/service-list/ServiceListPage";
+import ServicePriceLogPage from "../../pages/services/service-price-log/ServicePriceLogPage";
 import Sidebar from "./Sidebar";
 import Topbar from "./Topbar";
 
@@ -45,9 +47,11 @@ export default function AppShell() {
             <Route path="/customers" element={<CustomerPage />} />
             <Route path="/membership" element={<MembershipPage />} />
 
-            <Route path="/" element={<DashboardPage />} />
+            {/* <Route path="/" element={<DashboardPage />} /> */}
             <Route path="/bookings" element={<BookingsPage />} />
-            <Route path="/services" element={<ServicesPage />} />
+            <Route path="/services" element={<ServiceListPage />} />
+            <Route path="/service-details" element={<ServiceDetailsPage />} />
+            <Route path="/service-price-log" element={<ServicePriceLogPage />} />
             <Route path="/payments" element={<PaymentPage />} />
             <Route path="/reports" element={<ReportsPage />} />
             <Route path="/employees" element={<EmployeesPage />} />

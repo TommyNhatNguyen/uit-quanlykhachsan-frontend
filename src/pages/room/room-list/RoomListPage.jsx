@@ -1,9 +1,15 @@
-import { DeleteOutlined, EditOutlined, PlusOutlined } from "@ant-design/icons";
+import {
+  DeleteOutlined,
+  DollarCircleOutlined,
+  EditOutlined,
+  PlusOutlined,
+} from "@ant-design/icons";
 import { Badge, Button, Slider, Space, Table, Tooltip, Typography } from "antd";
 import { useState } from "react";
 import RoomTypePicker from "../../../components/RoomTypePicker";
 import useRooms from "../../../hooks/useRooms";
 import { DeleteFormTrigger } from "./DeleteForm";
+import { UpdatePriceFormTrigger } from "./UpdatePriceForm";
 import { UpsertFormTrigger } from "./UpsertForm";
 
 export default function RoomListPage() {
@@ -167,6 +173,11 @@ export default function RoomListPage() {
             key: "actions",
             render: (_, record) => (
               <Space>
+                <UpdatePriceFormTrigger id={record.id}>
+                  <Tooltip title="Cập nhật giá phòng">
+                    <Button type="text" icon={<DollarCircleOutlined />} />
+                  </Tooltip>
+                </UpdatePriceFormTrigger>
                 <UpsertFormTrigger id={record.id}>
                   <Tooltip title="Chỉnh sửa">
                     <Button type="text" icon={<EditOutlined />} />

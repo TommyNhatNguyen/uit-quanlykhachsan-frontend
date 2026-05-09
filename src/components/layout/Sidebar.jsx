@@ -87,7 +87,7 @@ export default function Sidebar() {
             {
               key: "room-price",
               icon: <DollarOutlined />,
-              label: labelWithCount("Cấu hình giá phòng", 0),
+              label: labelWithCount("Lịch sử giá phòng", 0),
               navigate: "/room-price",
               onClick: () => navigate("/room-price"),
             },
@@ -112,10 +112,29 @@ export default function Sidebar() {
           onClick: () => navigate("/membership"),
         },
         {
-          key: "services",
+          key: "services-group",
           icon: <AppstoreOutlined />,
-          label: labelWithCount("Dịch vụ", 0),
-          onClick: () => navigate("/services"),
+          label: "Dịch vụ",
+          children: [
+            {
+              key: "services",
+              icon: <UnorderedListOutlined />,
+              label: "Danh sách dịch vụ",
+              onClick: () => navigate("/services"),
+            },
+            {
+              key: "service-details",
+              icon: <TagsOutlined />,
+              label: "Sử dụng dịch vụ",
+              onClick: () => navigate("/service-details"),
+            },
+            {
+              key: "service-price-log",
+              icon: <DollarOutlined />,
+              label: "Lịch sử giá dịch vụ",
+              onClick: () => navigate("/service-price-log"),
+            },
+          ],
         },
       ],
     },
