@@ -1,4 +1,4 @@
-import { DeleteOutlined, PlusOutlined } from "@ant-design/icons";
+import { PlusOutlined } from "@ant-design/icons";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   Button,
@@ -21,6 +21,7 @@ import MembershipPicker from "../../components/MembershipPicker";
 import RoomPicker from "../../components/RoomPicker";
 import { useBookingDetail, useBookingUpsert } from "../../hooks/useBookings";
 import { useCustomerUpsert } from "../../hooks/useCustomers";
+import useRooms from "../../hooks/useRooms";
 
 const STATUS_OPTIONS = [
   { value: "BOOKED", label: "Đặt phòng" },
@@ -64,11 +65,15 @@ function UpsertForm({ id, open, onClose }) {
 
   const isPending = isBookingPending || isCustomerPending;
 
+  const { data: roomsData } = useRooms({ pageSize: 1000 });
+  const allRooms = roomsData?.data ?? [];
+
   const {
     control,
     handleSubmit,
     reset,
     watch,
+    setValue,
     clearErrors,
     formState: { errors },
   } = useForm({
@@ -90,6 +95,7 @@ function UpsertForm({ id, open, onClose }) {
   const { fields, append, remove } = useFieldArray({
     control,
     name: "booking_details",
+    keyName: "_key",
   });
   const details = watch("booking_details");
 
@@ -107,7 +113,8 @@ function UpsertForm({ id, open, onClose }) {
         notes: result.data.notes || "",
         is_fully_paid: result.data.is_fully_paid,
         booking_details: (result.data.booking_details ?? []).map((d) => ({
-          _id: d.id,
+          ...d,
+          id: d.id,
           room_id: d.room_id,
           dateRange: [dayjs(d.checkin_date), dayjs(d.checkout_date)],
           price_per_night: d.price_per_night,
@@ -180,7 +187,9 @@ function UpsertForm({ id, open, onClose }) {
         total_amount: totalRoom,
         status: d.status || "BOOKED",
       };
-      return isEdit ? base : { booking_id: 0, ...base };
+      return isEdit
+        ? { id: d.id, booking_id: d.booking_id, ...base }
+        : { booking_id: 0, ...base };
     });
 
     try {
@@ -495,13 +504,12 @@ function UpsertForm({ id, open, onClose }) {
 
             {fields.map((field, index) => {
               const dr = details[index]?.dateRange;
-              const nights =
-                dr?.[0] && dr?.[1] ? dr[1].diff(dr[0], "day") : 0;
+              const nights = dr?.[0] && dr?.[1] ? dr[1].diff(dr[0], "day") : 0;
               const total = nights * (details[index]?.price_per_night || 0);
 
               return (
                 <div
-                  key={field.id}
+                  key={field._key}
                   style={{
                     display: "grid",
                     gridTemplateColumns: colTemplate,
@@ -517,6 +525,17 @@ function UpsertForm({ id, open, onClose }) {
                     render={({ field }) => (
                       <RoomPicker
                         {...field}
+                        disabled={isEdit}
+                        onChange={(val) => {
+                          field.onChange(val);
+                          const room = allRooms.find((r) => r.id === val);
+                          if (room?.current_price_per_night != null) {
+                            setValue(
+                              `booking_details.${index}.price_per_night`,
+                              room.current_price_per_night,
+                            );
+                          }
+                        }}
                         placeholder="Chọn phòng"
                         style={{ width: "100%" }}
                       />
@@ -532,6 +551,7 @@ function UpsertForm({ id, open, onClose }) {
                         onChange={field.onChange}
                         format="DD/MM/YYYY"
                         style={{ width: "100%" }}
+                        disabled={isEdit}
                       />
                     )}
                   />
@@ -551,6 +571,7 @@ function UpsertForm({ id, open, onClose }) {
                           `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ".")
                         }
                         parser={(v) => v?.replace(/\./g, "") ?? "0"}
+                        disabled={isEdit}
                       />
                     )}
                   />
@@ -576,13 +597,6 @@ function UpsertForm({ id, open, onClose }) {
                       )}
                     />
                   )}
-                  <Button
-                    danger
-                    type="text"
-                    size="small"
-                    icon={<DeleteOutlined />}
-                    onClick={() => remove(index)}
-                  />
                 </div>
               );
             })}
