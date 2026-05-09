@@ -51,3 +51,11 @@ export function useRoomUpdatePrice() {
     },
   });
 }
+
+export function useRoomHistoryPrices(id) {
+  return useQuery({
+    queryKey: ["rooms", "history-prices", id],
+    queryFn: () => roomsApi.getHistoryPrices(id),
+    enabled: !!id,
+  });
+}

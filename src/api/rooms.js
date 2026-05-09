@@ -10,4 +10,5 @@ export const roomsApi = {
   update: (id, data) => api.put(`${BASE}/${id}`, data),
   delete: (id) => api.delete(`${BASE}/${id}`),
   updatePrice: (data) => api.post(`${BASE}/update-price`, data),
+  getHistoryPrices: (id) => api.get(`${BASE}/get-history_prices/${id}`),
 };
