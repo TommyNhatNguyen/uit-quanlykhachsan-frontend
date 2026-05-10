@@ -1,4 +1,5 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
+import { servicePriceLogsApi } from "../api/servicePriceLogs";
 import { serviceItemsApi } from "../api/serviceItems";
 
 export function useServiceItems({ page = 1, pageSize = 10 } = {}) {
@@ -38,5 +39,13 @@ export function useServiceItemUpsert() {
 export function useServiceItemDelete() {
   return useMutation({
     mutationFn: (id) => serviceItemsApi.delete(id),
+  });
+}
+
+export function useServiceItemHistoryPrices(id) {
+  return useQuery({
+    queryKey: ["service-price-logs", "by-service", id],
+    queryFn: () => servicePriceLogsApi.list(1, 1000, { service_id: id }),
+    enabled: !!id,
   });
 }

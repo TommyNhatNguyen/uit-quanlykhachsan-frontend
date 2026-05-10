@@ -1,6 +1,5 @@
 import {
   AppstoreOutlined,
-  BarChartOutlined,
   CalendarOutlined,
   CreditCardOutlined,
   DashboardOutlined,
@@ -147,12 +146,6 @@ export default function Sidebar() {
           icon: <CreditCardOutlined />,
           label: "Thanh toán",
           onClick: () => navigate("/payments"),
-        },
-        {
-          key: "reports",
-          icon: <BarChartOutlined />,
-          label: "Báo cáo",
-          onClick: () => navigate("/reports"),
         },
       ],
     },

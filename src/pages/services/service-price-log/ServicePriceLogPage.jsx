@@ -1,21 +1,69 @@
-import { Space, Table, Typography } from "antd";
+import { Input, Space, Table, Tag, Typography } from "antd";
 import { useState } from "react";
-import ServicePicker from "../../../components/ServicePicker";
-import useServicePriceLogs from "../../../hooks/useServicePriceLogs";
+import { useServiceItemHistoryPrices } from "../../../hooks/useServiceItems";
+import useServiceItems from "../../../hooks/useServiceItems";
 
 const fmtVND = (v) =>
   typeof v === "number"
     ? v.toLocaleString("vi-VN", { style: "currency", currency: "VND" })
     : "—";
 
+const fmtDate = (v) =>
+  v
+    ? new Date(v).toLocaleString("vi-VN", {
+        dateStyle: "short",
+        timeStyle: "short",
+      })
+    : "—";
+
+function ServicePriceHistory({ serviceId }) {
+  const { data, isLoading } = useServiceItemHistoryPrices(serviceId);
+  const records = Array.isArray(data) ? data : (data?.data ?? []);
+
+  return (
+    <Table
+      loading={isLoading}
+      dataSource={records}
+      columns={[
+        {
+          title: "Ngày áp dụng",
+          dataIndex: "created_at",
+          key: "created_at",
+          render: fmtDate,
+        },
+        {
+          title: "Giá",
+          dataIndex: "price",
+          key: "price",
+          align: "right",
+          render: (v) => <strong>{fmtVND(v)}</strong>,
+        },
+      ]}
+      rowKey="id"
+      size="small"
+      pagination={false}
+      locale={{ emptyText: "Không có lịch sử giá" }}
+      style={{ marginLeft: 48 }}
+    />
+  );
+}
+
 export default function ServicePriceLogPage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const [serviceId, setServiceId] = useState(null);
+  const [search, setSearch] = useState("");
 
-  const { isLoading, ...result } = useServicePriceLogs({ page, pageSize, serviceId });
-  const data = result.data?.data;
+  const { isLoading, ...result } = useServiceItems({ page, pageSize });
+  const allData = result.data?.data ?? [];
   const total = result.data?.total;
+
+  const data = search
+    ? allData.filter(
+        (s) =>
+          s.name?.toLowerCase().includes(search.toLowerCase()) ||
+          s.catalog?.toLowerCase().includes(search.toLowerCase())
+      )
+    : allData;
 
   return (
     <div>
@@ -23,19 +71,20 @@ export default function ServicePriceLogPage() {
         <div>
           <Typography.Title level={1}>Lịch sử giá dịch vụ</Typography.Title>
           <Typography.Text type="secondary">
-            Xem lịch sử thay đổi giá các dịch vụ
+            Xem giá hiện tại và lịch sử thay đổi giá từng dịch vụ
           </Typography.Text>
         </div>
       </div>
 
       <div className="mb-3">
         <Space>
-          <Typography.Text type="secondary">Lọc theo dịch vụ:</Typography.Text>
-          <ServicePicker
-            value={serviceId}
-            onChange={(v) => { setServiceId(v ?? null); setPage(1); }}
-            placeholder="Tất cả dịch vụ"
-            style={{ minWidth: 220 }}
+          <Typography.Text type="secondary">Tìm kiếm:</Typography.Text>
+          <Input.Search
+            placeholder="Tên hoặc danh mục dịch vụ"
+            allowClear
+            style={{ minWidth: 260 }}
+            onSearch={(v) => { setSearch(v); setPage(1); }}
+            onChange={(e) => { if (!e.target.value) { setSearch(""); setPage(1); } }}
           />
         </Space>
       </div>
@@ -43,31 +92,35 @@ export default function ServicePriceLogPage() {
       <Table
         loading={isLoading}
         dataSource={data}
+        expandable={{
+          expandedRowRender: (record) => (
+            <ServicePriceHistory serviceId={record.id} />
+          ),
+          rowExpandable: () => true,
+        }}
         columns={[
           { title: "ID", dataIndex: "id", key: "id", width: 60 },
           {
-            title: "Dịch vụ",
-            key: "service",
-            render: (_, r) => r.service?.name ?? `#${r.service_id}`,
+            title: "Tên dịch vụ",
+            dataIndex: "name",
+            key: "name",
           },
           {
-            title: "Giá",
-            dataIndex: "price",
-            key: "price",
+            title: "Danh mục",
+            dataIndex: "catalog",
+            key: "catalog",
+            render: (v) => v || "—",
+          },
+          {
+            title: "Giá hiện tại",
+            dataIndex: "current_price",
+            key: "current_price",
             align: "right",
-            render: (v) => <strong>{fmtVND(v)}</strong>,
-          },
-          {
-            title: "Ngày áp dụng",
-            dataIndex: "created_at",
-            key: "created_at",
-            render: (v) =>
-              v
-                ? new Date(v).toLocaleString("vi-VN", {
-                    dateStyle: "short",
-                    timeStyle: "short",
-                  })
-                : "—",
+            render: (v) => (
+              <Tag color="blue" style={{ fontWeight: 600 }}>
+                {fmtVND(v)}
+              </Tag>
+            ),
           },
         ]}
         rowKey="id"
@@ -78,7 +131,7 @@ export default function ServicePriceLogPage() {
           pageSize,
           total,
           showSizeChanger: true,
-          showTotal: (t) => `Tổng ${t} bản ghi`,
+          showTotal: (t) => `Tổng ${t} dịch vụ`,
           onChange: (newPage, newPageSize) => {
             setPage(newPage);
             setPageSize(newPageSize);

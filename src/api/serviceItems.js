@@ -1,6 +1,6 @@
-import api from './axios';
+import api from "./axios";
 
-const BASE = '/api/service-items';
+const BASE = "/api/services";
 
 export const serviceItemsApi = {
   list: (page = 1, pageSize = 10) =>
