@@ -52,6 +52,18 @@ export function useRoomUpdatePrice() {
   });
 }
 
+export function useAvailableRooms({ checkinDate, checkoutDate } = {}) {
+  return useQuery({
+    queryKey: ["rooms", "available", checkinDate, checkoutDate],
+    queryFn: () =>
+      roomsApi.getAvailableRooms({
+        checkin_date: checkinDate,
+        checkout_date: checkoutDate,
+      }),
+    enabled: !!checkinDate && !!checkoutDate,
+  });
+}
+
 export function useRoomHistoryPrices(id) {
   return useQuery({
     queryKey: ["rooms", "history-prices", id],

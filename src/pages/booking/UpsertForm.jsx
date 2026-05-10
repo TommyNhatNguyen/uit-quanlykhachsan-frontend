@@ -1,4 +1,4 @@
-import { PlusOutlined } from "@ant-design/icons";
+import { DeleteOutlined, PlusOutlined } from "@ant-design/icons";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   Button,
@@ -15,13 +15,13 @@ import {
 } from "antd";
 import dayjs from "dayjs";
 import { useEffect, useState } from "react";
-import { Controller, useFieldArray, useForm } from "react-hook-form";
+import { Controller, useFieldArray, useForm, useWatch } from "react-hook-form";
 import CustomerPicker from "../../components/CustomerPicker";
 import MembershipPicker from "../../components/MembershipPicker";
 import RoomPicker from "../../components/RoomPicker";
 import { useBookingDetail, useBookingUpsert } from "../../hooks/useBookings";
 import { useCustomerUpsert } from "../../hooks/useCustomers";
-import useRooms from "../../hooks/useRooms";
+import { useAvailableRooms } from "../../hooks/useRooms";
 
 const STATUS_OPTIONS = [
   { value: "BOOKED", label: "Đặt phòng" },
@@ -40,6 +40,130 @@ const fmtVND = (v) =>
   typeof v === "number"
     ? v.toLocaleString("vi-VN", { style: "currency", currency: "VND" })
     : "—";
+
+function BookingDetailRow({ index, control, isEdit, setValue, remove, colTemplate }) {
+  const dateRange = useWatch({ control, name: `booking_details.${index}.dateRange` });
+  const pricePerNight = useWatch({ control, name: `booking_details.${index}.price_per_night` });
+
+  const checkinDate = dateRange?.[0]?.toISOString();
+  const checkoutDate = dateRange?.[1]?.toISOString();
+  const hasDateRange = !!checkinDate && !!checkoutDate;
+
+  const { data: availableData, isFetching } = useAvailableRooms({ checkinDate, checkoutDate });
+  const availableRooms = Array.isArray(availableData) ? availableData : (availableData?.data ?? []);
+  const roomOptions = availableRooms.map((r) => ({
+    label: `#${r.room_num}${r.room_name ? ` — ${r.room_name}` : ""}`,
+    value: r.id,
+  }));
+
+  const nights = dateRange?.[0] && dateRange?.[1] ? dateRange[1].diff(dateRange[0], "day") : 0;
+  const total = nights * (pricePerNight || 0);
+
+  return (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: colTemplate,
+        gap: 8,
+        alignItems: "center",
+        marginBottom: 8,
+      }}
+    >
+      <Controller
+        name={`booking_details.${index}.dateRange`}
+        control={control}
+        rules={{ required: true }}
+        render={({ field }) => (
+          <DatePicker.RangePicker
+            value={field.value}
+            onChange={(val) => {
+              field.onChange(val);
+              if (!isEdit) {
+                setValue(`booking_details.${index}.room_id`, null);
+                setValue(`booking_details.${index}.price_per_night`, 0);
+              }
+            }}
+            format="DD/MM/YYYY"
+            style={{ width: "100%" }}
+            disabled={isEdit}
+          />
+        )}
+      />
+
+      <Controller
+        name={`booking_details.${index}.room_id`}
+        control={control}
+        rules={{ required: true }}
+        render={({ field: f }) =>
+          isEdit ? (
+            <RoomPicker {...f} disabled style={{ width: "100%" }} />
+          ) : (
+            <Select
+              value={f.value}
+              onChange={(val) => {
+                f.onChange(val);
+                const room = availableRooms.find((r) => r.id === val);
+                if (room?.current_price_per_night != null) {
+                  setValue(`booking_details.${index}.price_per_night`, room.current_price_per_night);
+                }
+              }}
+              options={roomOptions}
+              loading={isFetching}
+              disabled={!hasDateRange}
+              placeholder={hasDateRange ? "Chọn phòng trống" : "Chọn ngày trước"}
+              showSearch
+              filterOption={(input, opt) =>
+                opt.label.toLowerCase().includes(input.toLowerCase())
+              }
+              style={{ width: "100%" }}
+              allowClear
+            />
+          )
+        }
+      />
+
+      <Typography.Text style={{ textAlign: "center" }}>{nights}</Typography.Text>
+
+      <Controller
+        name={`booking_details.${index}.price_per_night`}
+        control={control}
+        render={({ field }) => (
+          <InputNumber
+            {...field}
+            style={{ width: "100%" }}
+            controls={false}
+            min={0}
+            formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ".")}
+            parser={(v) => v?.replace(/\./g, "") ?? "0"}
+            disabled={isEdit}
+          />
+        )}
+      />
+
+      <Typography.Text style={{ textAlign: "right", whiteSpace: "nowrap", fontSize: 13 }}>
+        {fmtVND(total)}
+      </Typography.Text>
+
+      {isEdit ? (
+        <Controller
+          name={`booking_details.${index}.status`}
+          control={control}
+          render={({ field }) => (
+            <Select {...field} options={STATUS_OPTIONS} size="small" />
+          )}
+        />
+      ) : (
+        <Button
+          type="text"
+          danger
+          size="small"
+          icon={<DeleteOutlined />}
+          onClick={() => remove(index)}
+        />
+      )}
+    </div>
+  );
+}
 
 export function UpsertFormTrigger({ id, children }) {
   const [open, setOpen] = useState(false);
@@ -64,9 +188,6 @@ function UpsertForm({ id, open, onClose }) {
   const [createNewCustomer, setCreateNewCustomer] = useState(false);
 
   const isPending = isBookingPending || isCustomerPending;
-
-  const { data: roomsData } = useRooms({ pageSize: 1000 });
-  const allRooms = roomsData?.data ?? [];
 
   const {
     control,
@@ -217,8 +338,8 @@ function UpsertForm({ id, open, onClose }) {
   }, 0);
 
   const colTemplate = isEdit
-    ? "minmax(140px,2fr) minmax(180px,2.2fr) 52px minmax(110px,1.3fr) minmax(100px,1.3fr) minmax(120px,1.5fr) 32px"
-    : "minmax(140px,2fr) minmax(180px,2.2fr) 52px minmax(110px,1.3fr) minmax(100px,1.3fr) 32px";
+    ? "minmax(180px,2.2fr) minmax(140px,2fr) 52px minmax(110px,1.3fr) minmax(100px,1.3fr) minmax(120px,1.5fr)"
+    : "minmax(180px,2.2fr) minmax(140px,2fr) 52px minmax(110px,1.3fr) minmax(100px,1.3fr) 32px";
 
   return (
     <Modal
@@ -456,20 +577,22 @@ function UpsertForm({ id, open, onClose }) {
           }}
         >
           <Typography.Text strong>Danh sách phòng đặt</Typography.Text>
-          <Button
-            size="small"
-            icon={<PlusOutlined />}
-            onClick={() =>
-              append({
-                room_id: null,
-                dateRange: null,
-                price_per_night: 0,
-                status: "BOOKED",
-              })
-            }
-          >
-            Thêm phòng
-          </Button>
+          {!isEdit && (
+            <Button
+              size="small"
+              icon={<PlusOutlined />}
+              onClick={() =>
+                append({
+                  room_id: null,
+                  dateRange: null,
+                  price_per_night: 0,
+                  status: "BOOKED",
+                })
+              }
+            >
+              Thêm phòng
+            </Button>
+          )}
         </div>
 
         {fields.length > 0 && (
@@ -484,13 +607,12 @@ function UpsertForm({ id, open, onClose }) {
               }}
             >
               {[
-                "Phòng",
                 "Check-in → Check-out",
+                "Phòng",
                 "Đêm",
                 "Giá/đêm",
                 "Tổng phòng",
-                ...(isEdit ? ["Trạng thái"] : []),
-                "",
+                isEdit ? "Trạng thái" : "",
               ].map((h, i) => (
                 <Typography.Text
                   key={i}
@@ -502,104 +624,17 @@ function UpsertForm({ id, open, onClose }) {
               ))}
             </div>
 
-            {fields.map((field, index) => {
-              const dr = details[index]?.dateRange;
-              const nights = dr?.[0] && dr?.[1] ? dr[1].diff(dr[0], "day") : 0;
-              const total = nights * (details[index]?.price_per_night || 0);
-
-              return (
-                <div
-                  key={field._key}
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: colTemplate,
-                    gap: 8,
-                    alignItems: "center",
-                    marginBottom: 8,
-                  }}
-                >
-                  <Controller
-                    name={`booking_details.${index}.room_id`}
-                    control={control}
-                    rules={{ required: true }}
-                    render={({ field }) => (
-                      <RoomPicker
-                        {...field}
-                        disabled={isEdit}
-                        onChange={(val) => {
-                          field.onChange(val);
-                          const room = allRooms.find((r) => r.id === val);
-                          if (room?.current_price_per_night != null) {
-                            setValue(
-                              `booking_details.${index}.price_per_night`,
-                              room.current_price_per_night,
-                            );
-                          }
-                        }}
-                        placeholder="Chọn phòng"
-                        style={{ width: "100%" }}
-                      />
-                    )}
-                  />
-                  <Controller
-                    name={`booking_details.${index}.dateRange`}
-                    control={control}
-                    rules={{ required: true }}
-                    render={({ field }) => (
-                      <DatePicker.RangePicker
-                        value={field.value}
-                        onChange={field.onChange}
-                        format="DD/MM/YYYY"
-                        style={{ width: "100%" }}
-                        disabled={isEdit}
-                      />
-                    )}
-                  />
-                  <Typography.Text style={{ textAlign: "center" }}>
-                    {nights}
-                  </Typography.Text>
-                  <Controller
-                    name={`booking_details.${index}.price_per_night`}
-                    control={control}
-                    render={({ field }) => (
-                      <InputNumber
-                        {...field}
-                        style={{ width: "100%" }}
-                        controls={false}
-                        min={0}
-                        formatter={(v) =>
-                          `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ".")
-                        }
-                        parser={(v) => v?.replace(/\./g, "") ?? "0"}
-                        disabled={isEdit}
-                      />
-                    )}
-                  />
-                  <Typography.Text
-                    style={{
-                      textAlign: "right",
-                      whiteSpace: "nowrap",
-                      fontSize: 13,
-                    }}
-                  >
-                    {fmtVND(total)}
-                  </Typography.Text>
-                  {isEdit && (
-                    <Controller
-                      name={`booking_details.${index}.status`}
-                      control={control}
-                      render={({ field }) => (
-                        <Select
-                          {...field}
-                          options={STATUS_OPTIONS}
-                          size="small"
-                        />
-                      )}
-                    />
-                  )}
-                </div>
-              );
-            })}
+            {fields.map((field, index) => (
+              <BookingDetailRow
+                key={field._key}
+                index={index}
+                control={control}
+                isEdit={isEdit}
+                setValue={setValue}
+                remove={remove}
+                colTemplate={colTemplate}
+              />
+            ))}
 
             <div style={{ textAlign: "right", marginTop: 8 }}>
               <Typography.Text strong>

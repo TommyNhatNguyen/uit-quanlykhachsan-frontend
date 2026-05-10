@@ -7,7 +7,7 @@ import ServicePicker from "../../../components/ServicePicker";
 import { useServiceDetailItem, useServiceDetailUpsert } from "../../../hooks/useServiceDetails";
 import useServiceItems from "../../../hooks/useServiceItems";
 
-export default function UpsertForm({ id, ...props }) {
+export default function UpsertForm({ id, bookingDetailId, ...props }) {
   const result = useServiceDetailItem(id);
   const queryClient = useQueryClient();
   const { data: allServicesData } = useServiceItems({ pageSize: 1000 });
@@ -22,7 +22,7 @@ export default function UpsertForm({ id, ...props }) {
     formState: { errors },
   } = useForm({
     defaultValues: {
-      booking_detail_id: null,
+      booking_detail_id: bookingDetailId ?? null,
       service_id: null,
       quanity: 1,
       price: 0,
@@ -174,12 +174,19 @@ export default function UpsertForm({ id, ...props }) {
   );
 }
 
-export const UpsertFormTrigger = ({ children, id }) => {
+export const UpsertFormTrigger = ({ children, id, bookingDetailId }) => {
   const [open, setOpen] = useState(false);
   return (
     <>
       {React.cloneElement(children, { onClick: () => setOpen(true) })}
-      {open && <UpsertForm id={id} open={open} onClose={() => setOpen(false)} />}
+      {open && (
+        <UpsertForm
+          id={id}
+          bookingDetailId={bookingDetailId}
+          open={open}
+          onClose={() => setOpen(false)}
+        />
+      )}
     </>
   );
 };

@@ -13,19 +13,24 @@ const PAYMENT_METHOD_OPTIONS = [
   { value: "transfer", label: "Chuyển khoản" },
 ];
 
-export function UpsertFormTrigger({ id, children }) {
+export function UpsertFormTrigger({ id, bookingDetailId, children }) {
   const [open, setOpen] = useState(false);
   return (
     <>
       <span onClick={() => setOpen(true)}>{children}</span>
       {open && (
-        <UpsertForm id={id} open={open} onClose={() => setOpen(false)} />
+        <UpsertForm
+          id={id}
+          bookingDetailId={bookingDetailId}
+          open={open}
+          onClose={() => setOpen(false)}
+        />
       )}
     </>
   );
 }
 
-function UpsertForm({ id, open, onClose }) {
+function UpsertForm({ id, bookingDetailId, open, onClose }) {
   const isEdit = !!id;
   const queryClient = useQueryClient();
   const result = usePaymentDetail(id);
@@ -41,7 +46,7 @@ function UpsertForm({ id, open, onClose }) {
       cashier_id: null,
       total_payment: null,
       payment_method: null,
-      booking_detail_id: null,
+      booking_detail_id: bookingDetailId ?? null,
       created_at: dayjs(),
     },
   });

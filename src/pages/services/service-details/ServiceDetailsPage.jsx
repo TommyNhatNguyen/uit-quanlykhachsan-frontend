@@ -1,10 +1,10 @@
-import { DeleteOutlined, EditOutlined, PlusOutlined } from "@ant-design/icons";
+import { DeleteOutlined, PlusOutlined } from "@ant-design/icons";
 import { Button, Space, Table, Tooltip, Typography } from "antd";
 import { useState } from "react";
 import BookingDetailPicker from "../../../components/BookingDetailPicker";
 import ServicePicker from "../../../components/ServicePicker";
 import useServiceDetails from "../../../hooks/useServiceDetails";
-import { DeleteFormTrigger } from "./DeleteForm";
+import { DeleteFormTrigger } from "../service-details/DeleteForm";
 import { UpsertFormTrigger } from "./UpsertForm";
 
 const fmtVND = (v) =>
@@ -53,16 +53,24 @@ export default function ServiceDetailsPage() {
             <Typography.Text type="secondary">Dịch vụ:</Typography.Text>
             <ServicePicker
               value={serviceId}
-              onChange={(v) => { setServiceId(v ?? null); setPage(1); }}
+              onChange={(v) => {
+                setServiceId(v ?? null);
+                setPage(1);
+              }}
               placeholder="Tất cả"
               style={{ minWidth: 200 }}
             />
           </Space>
           <Space>
-            <Typography.Text type="secondary">Chi tiết đặt phòng:</Typography.Text>
+            <Typography.Text type="secondary">
+              Chi tiết đặt phòng:
+            </Typography.Text>
             <BookingDetailPicker
               value={bookingDetailId}
-              onChange={(v) => { setBookingDetailId(v ?? null); setPage(1); }}
+              onChange={(v) => {
+                setBookingDetailId(v ?? null);
+                setPage(1);
+              }}
               placeholder="Tất cả"
               style={{ minWidth: 280 }}
             />
@@ -70,7 +78,11 @@ export default function ServiceDetailsPage() {
           {hasFilter && (
             <Button
               size="small"
-              onClick={() => { setServiceId(null); setBookingDetailId(null); setPage(1); }}
+              onClick={() => {
+                setServiceId(null);
+                setBookingDetailId(null);
+                setPage(1);
+              }}
             >
               Xoá bộ lọc
             </Button>
@@ -114,24 +126,19 @@ export default function ServiceDetailsPage() {
             align: "right",
             render: (v) => <strong>{fmtVND(v)}</strong>,
           },
-          {
-            title: "Thao tác",
-            key: "actions",
-            render: (_, record) => (
-              <Space>
-                <UpsertFormTrigger id={record.id}>
-                  <Tooltip title="Chỉnh sửa">
-                    <Button type="text" icon={<EditOutlined />} />
-                  </Tooltip>
-                </UpsertFormTrigger>
-                <DeleteFormTrigger id={record.id}>
-                  <Tooltip title="Xoá">
-                    <Button danger type="text" icon={<DeleteOutlined />} />
-                  </Tooltip>
-                </DeleteFormTrigger>
-              </Space>
-            ),
-          },
+          // {
+          //   title: "Thao tác",
+          //   key: "actions",
+          //   render: (_, record) => (
+          //     <Space>
+          //       <DeleteFormTrigger id={record.id}>
+          //         <Tooltip title="Xoá">
+          //           <Button danger type="text" icon={<DeleteOutlined />} />
+          //         </Tooltip>
+          //       </DeleteFormTrigger>
+          //     </Space>
+          //   ),
+          // },
         ]}
         rowKey="id"
         size="small"

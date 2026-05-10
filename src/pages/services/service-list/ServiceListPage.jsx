@@ -1,8 +1,14 @@
-import { DeleteOutlined, EditOutlined, PlusOutlined } from "@ant-design/icons";
+import {
+  DeleteOutlined,
+  DollarCircleOutlined,
+  EditOutlined,
+  PlusOutlined,
+} from "@ant-design/icons";
 import { Button, Input, Space, Table, Tooltip, Typography } from "antd";
 import { useState } from "react";
 import useServiceItems from "../../../hooks/useServiceItems";
 import { DeleteFormTrigger } from "./DeleteForm";
+import { UpdatePriceFormTrigger } from "./UpdatePriceForm";
 import { UpsertFormTrigger } from "./UpsertForm";
 
 const fmtVND = (v) =>
@@ -79,6 +85,11 @@ export default function ServiceListPage() {
             key: "actions",
             render: (_, record) => (
               <Space>
+                <UpdatePriceFormTrigger id={record.id}>
+                  <Tooltip title="Cập nhật giá">
+                    <Button type="text" icon={<DollarCircleOutlined />} />
+                  </Tooltip>
+                </UpdatePriceFormTrigger>
                 <UpsertFormTrigger id={record.id}>
                   <Tooltip title="Chỉnh sửa">
                     <Button type="text" icon={<EditOutlined />} />

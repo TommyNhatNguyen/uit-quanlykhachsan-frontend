@@ -11,4 +11,5 @@ export const roomsApi = {
   delete: (id) => api.delete(`${BASE}/${id}`),
   updatePrice: (data) => api.post(`${BASE}/update-price`, data),
   getHistoryPrices: (id) => api.get(`${BASE}/get-history_prices/${id}`),
+  getAvailableRooms: (params) => api.get(`${BASE}/available`, { params }),
 };

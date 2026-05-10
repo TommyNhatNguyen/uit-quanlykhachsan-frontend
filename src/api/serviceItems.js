@@ -9,4 +9,5 @@ export const serviceItemsApi = {
   create: (data) => api.post(BASE, data),
   update: (id, data) => api.put(`${BASE}/${id}`, data),
   delete: (id) => api.delete(`${BASE}/${id}`),
+  getHistoryPrices: (id) => api.get(`${BASE}/get-history-prices/${id}`),
 };

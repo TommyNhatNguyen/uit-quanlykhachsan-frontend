@@ -9,4 +9,6 @@ export const bookingDetailsApi = {
   create: (data) => api.post(BASE, data),
   update: (id, data) => api.put(`${BASE}/${id}`, data),
   delete: (id) => api.delete(`${BASE}/${id}`),
+  totalPaymentsByBooking: (bookingId) =>
+    api.get(`${BASE}/total-payments/${bookingId}`),
 };

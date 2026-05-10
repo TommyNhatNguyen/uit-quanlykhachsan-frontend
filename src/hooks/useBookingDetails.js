@@ -9,3 +9,11 @@ export function useBookingDetails({ page = 1, pageSize = 10 } = {}) {
 }
 
 export default useBookingDetails;
+
+export function useBookingDetailsByBookingId(bookingId) {
+  return useQuery({
+    queryKey: ["booking-details", "by-booking", bookingId],
+    queryFn: () => bookingDetailsApi.totalPaymentsByBooking(bookingId),
+    enabled: !!bookingId,
+  });
+}

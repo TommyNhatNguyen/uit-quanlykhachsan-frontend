@@ -1,4 +1,6 @@
 import {
+  AppstoreOutlined,
+  CreditCardOutlined,
   DeleteOutlined,
   EditOutlined,
   EyeOutlined,
@@ -6,7 +8,10 @@ import {
 } from "@ant-design/icons";
 import { Badge, Button, Space, Table, Tooltip, Typography } from "antd";
 import { useState } from "react";
+import { useBookingDetailsByBookingId } from "../../hooks/useBookingDetails";
 import useBookings from "../../hooks/useBookings";
+import { UpsertFormTrigger as PaymentFormTrigger } from "../payment/UpsertForm";
+import { UpsertFormTrigger as ServiceDetailFormTrigger } from "../services/service-details/UpsertForm";
 import { DeleteFormTrigger } from "./DeleteForm";
 import { DetailModalTrigger } from "./DetailModal";
 import { UpsertFormTrigger } from "./UpsertForm";
@@ -30,6 +35,136 @@ const STATUS_LABEL = {
   CHECKOUT: "Check-out",
   CANCELED: "Đã huỷ",
 };
+
+function BookingDetailsTable({ bookingId }) {
+  const { data, isLoading } = useBookingDetailsByBookingId(bookingId);
+  const details = Array.isArray(data) ? data : (data?.data ?? []);
+
+  return (
+    <Table
+      loading={isLoading}
+      dataSource={details}
+      rowKey="id"
+      size="small"
+      pagination={false}
+      style={{ margin: "0 8px" }}
+      columns={[
+        {
+          title: "Phòng",
+          key: "room",
+          render: (_, d) =>
+            d.room
+              ? `#${d.room.room_num} — ${d.room.room_name}`
+              : `Phòng #${d.room_id}`,
+        },
+        {
+          title: "Check-in",
+          dataIndex: "checkin_date",
+          render: fmtDate,
+        },
+        {
+          title: "Check-out",
+          dataIndex: "checkout_date",
+          render: fmtDate,
+        },
+        {
+          title: "Số đêm",
+          dataIndex: "quantity_of_nights",
+        },
+        {
+          title: "Giá/đêm",
+          dataIndex: "price_per_night",
+          align: "right",
+          render: fmtVND,
+        },
+        {
+          title: "Tiền phòng",
+          dataIndex: "total_room_amount",
+          align: "right",
+          render: fmtVND,
+        },
+        {
+          title: "Tiền dịch vụ",
+          dataIndex: "total_service_amount",
+          align: "right",
+          render: (v) => fmtVND(v ?? 0),
+        },
+        {
+          title: "Tổng",
+          dataIndex: "total_amount",
+          align: "right",
+          render: (v) => <strong>{fmtVND(v)}</strong>,
+        },
+        {
+          title: "Đã thanh toán",
+          dataIndex: "total_payment",
+          align: "right",
+          render: (v) => (
+            <span style={{ color: v > 0 ? "#16a34a" : undefined }}>
+              {fmtVND(v ?? 0)}
+            </span>
+          ),
+        },
+        {
+          title: "Còn lại",
+          align: "right",
+          render: (_, d) => {
+            const rest = (d.total_amount ?? 0) - (d.total_payment ?? 0);
+            return (
+              <span style={{ color: rest > 0 ? "#dc2626" : "#16a34a" }}>
+                {fmtVND(rest)}
+              </span>
+            );
+          },
+        },
+        {
+          title: "Thanh toán",
+          dataIndex: "is_fully_paid",
+          render: (v) => (
+            <Badge color={v ? "green" : "orange"} text={v ? "Đủ" : "Chưa đủ"} />
+          ),
+        },
+        {
+          title: "Trạng thái",
+          dataIndex: "status",
+          render: (v) => (
+            <Badge
+              color={STATUS_COLOR[v] ?? "default"}
+              text={STATUS_LABEL[v] ?? v}
+            />
+          ),
+        },
+        {
+          title: "Thao tác",
+          key: "actions",
+          render: (_, d) => (
+            <Space>
+              <ServiceDetailFormTrigger bookingDetailId={d.id}>
+                <Tooltip title="Thêm dịch vụ">
+                  <Button
+                    type="text"
+                    icon={<AppstoreOutlined />}
+                    size="small"
+                  />
+                </Tooltip>
+              </ServiceDetailFormTrigger>
+              <PaymentFormTrigger bookingDetailId={d.id}>
+                <Tooltip title="Thêm thanh toán">
+                  <Button
+                    type="text"
+                    icon={<CreditCardOutlined />}
+                    size="small"
+                  />
+                </Tooltip>
+              </PaymentFormTrigger>
+            </Space>
+          ),
+        },
+      ]}
+      locale={{ emptyText: "Không có chi tiết phòng" }}
+    />
+  );
+}
 
 export default function BookingsPage() {
   const [page, setPage] = useState(1);
@@ -61,79 +196,10 @@ export default function BookingsPage() {
           loading={isLoading}
           dataSource={data}
           expandable={{
-            expandedRowRender: (record) => {
-              const details = record.booking_details ?? [];
-              return (
-                <Table
-                  dataSource={details}
-                  rowKey="id"
-                  size="small"
-                  pagination={false}
-                  style={{ margin: "0 8px" }}
-                  columns={[
-                    {
-                      title: "Phòng",
-                      key: "room",
-                      render: (_, d) =>
-                        d.room
-                          ? `#${d.room.room_num} — ${d.room.room_name}`
-                          : `Phòng #${d.room_id}`,
-                    },
-                    {
-                      title: "Check-in",
-                      dataIndex: "checkin_date",
-                      render: fmtDate,
-                    },
-                    {
-                      title: "Check-out",
-                      dataIndex: "checkout_date",
-                      render: fmtDate,
-                    },
-                    {
-                      title: "Số đêm",
-                      dataIndex: "quantity_of_nights",
-                    },
-                    {
-                      title: "Giá/đêm",
-                      dataIndex: "price_per_night",
-                      align: "right",
-                      render: fmtVND,
-                    },
-                    {
-                      title: "Tiền phòng",
-                      dataIndex: "total_room_amount",
-                      align: "right",
-                      render: fmtVND,
-                    },
-                    {
-                      title: "Tiền dịch vụ",
-                      dataIndex: "total_service_amount",
-                      align: "right",
-                      render: (v) => fmtVND(v ?? 0),
-                    },
-                    {
-                      title: "Tổng",
-                      dataIndex: "total_amount",
-                      align: "right",
-                      render: (v) => <strong>{fmtVND(v)}</strong>,
-                    },
-                    {
-                      title: "Trạng thái",
-                      dataIndex: "status",
-                      render: (v) => (
-                        <Badge
-                          color={STATUS_COLOR[v] ?? "default"}
-                          text={STATUS_LABEL[v] ?? v}
-                        />
-                      ),
-                    },
-                  ]}
-                  locale={{ emptyText: "Không có chi tiết phòng" }}
-                />
-              );
-            },
-            rowExpandable: (record) =>
-              (record.booking_details?.length ?? 0) > 0,
+            expandedRowRender: (record) => (
+              <BookingDetailsTable bookingId={record.id} />
+            ),
+            rowExpandable: () => true,
           }}
           columns={[
             {
@@ -170,7 +236,7 @@ export default function BookingsPage() {
               key: "total",
               align: "right",
               render: (_, r) => {
-                const total = r.booking_details?.reduce(
+                const total = (r.booking_details ?? []).reduce(
                   (s, d) => s + (d.total_amount ?? 0),
                   0,
                 );

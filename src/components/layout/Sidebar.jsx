@@ -122,16 +122,16 @@ export default function Sidebar() {
               onClick: () => navigate("/services"),
             },
             {
-              key: "service-details",
-              icon: <TagsOutlined />,
-              label: "Sử dụng dịch vụ",
-              onClick: () => navigate("/service-details"),
-            },
-            {
               key: "service-price-log",
               icon: <DollarOutlined />,
               label: "Lịch sử giá dịch vụ",
               onClick: () => navigate("/service-price-log"),
+            },
+            {
+              key: "service-details",
+              icon: <TagsOutlined />,
+              label: "Lịch sử dùng dịch vụ",
+              onClick: () => navigate("/service-details"),
             },
           ],
         },
