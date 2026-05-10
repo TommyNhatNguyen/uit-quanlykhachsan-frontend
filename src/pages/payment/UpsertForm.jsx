@@ -76,6 +76,8 @@ function UpsertForm({ id, bookingDetailId, open, onClose }) {
       {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: ["payments"] });
+          queryClient.invalidateQueries({ queryKey: ["booking-details"] });
+          queryClient.invalidateQueries({ queryKey: ["bookings"] });
           onClose();
           message.success(
             isEdit

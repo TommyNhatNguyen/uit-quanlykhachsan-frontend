@@ -70,6 +70,8 @@ export default function UpsertForm({ id, bookingDetailId, ...props }) {
         onSuccess: () => {
           message.success(id ? "Đã cập nhật" : "Đã thêm sử dụng dịch vụ");
           queryClient.invalidateQueries({ queryKey: ["service-details"] });
+          queryClient.invalidateQueries({ queryKey: ["booking-details"] });
+          queryClient.invalidateQueries({ queryKey: ["bookings"] });
           props.onClose();
         },
         onError: () => {

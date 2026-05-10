@@ -6,7 +6,7 @@ import {
   EyeOutlined,
   PlusOutlined,
 } from "@ant-design/icons";
-import { Badge, Button, Space, Table, Tooltip, Typography } from "antd";
+import { Badge, Button, Radio, Space, Table, Tooltip, Typography } from "antd";
 import { useState } from "react";
 import { useBookingDetailsByBookingId } from "../../hooks/useBookingDetails";
 import useBookings from "../../hooks/useBookings";
@@ -169,8 +169,9 @@ function BookingDetailsTable({ bookingId }) {
 export default function BookingsPage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [isFullyPaid, setIsFullyPaid] = useState(null);
 
-  const { isLoading, ...result } = useBookings({ page, pageSize });
+  const { isLoading, ...result } = useBookings({ page, pageSize, isFullyPaid });
   const data = result.data?.data;
   const total = result.data?.total;
 
@@ -189,6 +190,22 @@ export default function BookingsPage() {
               Thêm đặt phòng
             </Button>
           </UpsertFormTrigger>
+        </Space>
+      </div>
+      <div className="mb-3">
+        <Space>
+          <Typography.Text type="secondary">Thanh toán:</Typography.Text>
+          <Radio.Group
+            value={isFullyPaid}
+            onChange={(e) => { setIsFullyPaid(e.target.value); setPage(1); }}
+            optionType="button"
+            buttonStyle="solid"
+            size="small"
+          >
+            <Radio.Button value={null}>Tất cả</Radio.Button>
+            <Radio.Button value={true}>Đã thanh toán</Radio.Button>
+            <Radio.Button value={false}>Chưa thanh toán</Radio.Button>
+          </Radio.Group>
         </Space>
       </div>
       <div>

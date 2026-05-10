@@ -1,10 +1,13 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { bookingsApi } from "../api/bookings";
 
-export function useBookings({ page = 1, pageSize = 10 } = {}) {
+export function useBookings({ page = 1, pageSize = 10, isFullyPaid } = {}) {
+  const filters = {};
+  if (isFullyPaid != null) filters.is_fully_paid = isFullyPaid;
+
   return useQuery({
-    queryKey: ["bookings", page, pageSize],
-    queryFn: () => bookingsApi.list(page, pageSize),
+    queryKey: ["bookings", page, pageSize, filters],
+    queryFn: () => bookingsApi.list(page, pageSize, filters),
   });
 }
 
