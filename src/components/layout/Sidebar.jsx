@@ -13,13 +13,11 @@ import {
   UserOutlined,
 } from "@ant-design/icons";
 import { Badge, Layout, Menu, Typography } from "antd";
-import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 const { Sider } = Layout;
 
 export default function Sidebar() {
-  const data = {};
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -49,7 +47,7 @@ export default function Sidebar() {
           key: "dashboard",
           icon: <DashboardOutlined />,
           label: "Dashboard",
-          onClick: () => navigate("/"),
+          onClick: () => navigate("/dashboard"),
         },
       ],
     },
