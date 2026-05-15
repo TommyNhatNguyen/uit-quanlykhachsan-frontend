@@ -13,13 +13,28 @@ import {
   UserOutlined,
 } from "@ant-design/icons";
 import { Badge, Layout, Menu, Typography } from "antd";
+import { useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useAuth } from "../../contexts/AuthContext";
+
+const ROLE = {
+  ADMIN: "admin",
+  STAFF: "staff",
+  ACCOUNTANT: "accountant",
+};
+
+function normalizeRole(role) {
+  if (role == null) return null;
+  return String(role).toLowerCase().trim();
+}
 
 const { Sider } = Layout;
 
 export default function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
+  const role = normalizeRole(user?.role);
 
   const selectedKey =
     location.pathname === "/" ? "dashboard" : location.pathname.slice(1);
@@ -38,128 +53,158 @@ export default function Sidebar() {
     </span>
   );
 
-  const items = [
-    {
-      type: "group",
-      label: "Tổng quan",
-      children: [
-        {
-          key: "dashboard",
-          icon: <DashboardOutlined />,
-          label: "Dashboard",
-          onClick: () => navigate("/dashboard"),
-        },
-      ],
-    },
-    {
-      type: "group",
-      label: "Vận hành",
-      children: [
-        {
-          key: "hotel",
-          icon: <ShopOutlined />,
-          label: "Khách sạn",
-          onClick: () => navigate("/hotel"),
-        },
-        {
-          key: "rooms",
-          icon: <HomeOutlined />,
-          label: labelWithCount("Quản lý phòng", 0),
-          navigate: "/room",
-          children: [
-            {
-              key: "room-list",
-              icon: <UnorderedListOutlined />,
-              label: labelWithCount("Danh sách phòng", 0),
-              navigate: "/room-list",
-              onClick: () => navigate("/room-list"),
-            },
-            {
-              key: "room-type",
-              icon: <TagsOutlined />,
-              label: labelWithCount("Cấu hình loại phòng", 0),
-              navigate: "/room-type",
-              onClick: () => navigate("/room-type"),
-            },
-            {
-              key: "room-price",
-              icon: <DollarOutlined />,
-              label: labelWithCount("Lịch sử giá phòng", 0),
-              navigate: "/room-price",
-              onClick: () => navigate("/room-price"),
-            },
-          ],
-        },
-        {
-          key: "bookings",
-          icon: <CalendarOutlined />,
-          label: labelWithCount("Đặt phòng", 0),
-          onClick: () => navigate("/bookings"),
-        },
-        {
-          key: "customers",
-          icon: <TeamOutlined />,
-          label: labelWithCount("Khách hàng", 0),
-          onClick: () => navigate("/customers"),
-        },
-        {
-          key: "membership",
-          icon: <IdcardOutlined />,
-          label: labelWithCount("Quản lý thành viên", 0),
-          onClick: () => navigate("/membership"),
-        },
-        {
-          key: "services-group",
-          icon: <AppstoreOutlined />,
-          label: "Dịch vụ",
-          children: [
-            {
-              key: "services",
-              icon: <UnorderedListOutlined />,
-              label: "Danh sách dịch vụ",
-              onClick: () => navigate("/services"),
-            },
-            {
-              key: "service-price-log",
-              icon: <DollarOutlined />,
-              label: "Lịch sử giá dịch vụ",
-              onClick: () => navigate("/service-price-log"),
-            },
-            {
-              key: "service-details",
-              icon: <TagsOutlined />,
-              label: "Lịch sử dùng dịch vụ",
-              onClick: () => navigate("/service-details"),
-            },
-          ],
-        },
-      ],
-    },
-    {
-      type: "group",
-      label: "Tài chính",
-      children: [
-        {
-          key: "payments",
-          icon: <CreditCardOutlined />,
-          label: "Thanh toán",
-          onClick: () => navigate("/payments"),
-        },
-      ],
-    },
-    {
-      type: "group",
-      label: "Hệ thống",
-      children: [
-        {
-          key: "employees",
-          icon: <UserOutlined />,
-          label: "Nhân viên",
-          onClick: () => navigate("/employees"),
-        },
-      ],
-    },
-  ];
+  const items = useMemo(() => {
+    const isAdmin = role === ROLE.ADMIN;
+    const isStaff = role === ROLE.STAFF;
+    const isAccountant = role === ROLE.ACCOUNTANT;
+    const isKnownRole = isAdmin || isStaff || isAccountant;
+    const treatAsStaff = !isKnownRole;
+
+    const showOverview = true;
+    const showOperations = isAdmin || isStaff || treatAsStaff;
+    const showFinance = true;
+    const showSystem = isAdmin;
+
+    const allGroups = [
+      {
+        type: "group",
+        key: "group-overview",
+        label: "Tổng quan",
+        show: showOverview,
+        children: [
+          {
+            key: "dashboard",
+            icon: <DashboardOutlined />,
+            label: "Dashboard",
+            onClick: () => navigate("/dashboard"),
+          },
+        ],
+      },
+      {
+        type: "group",
+        key: "group-operations",
+        label: "Vận hành",
+        show: showOperations,
+        children: [
+          {
+            key: "hotel",
+            icon: <ShopOutlined />,
+            label: "Khách sạn",
+            onClick: () => navigate("/hotel"),
+          },
+          {
+            key: "rooms",
+            icon: <HomeOutlined />,
+            label: labelWithCount("Quản lý phòng", 0),
+            navigate: "/room",
+            children: [
+              {
+                key: "room-list",
+                icon: <UnorderedListOutlined />,
+                label: labelWithCount("Danh sách phòng", 0),
+                navigate: "/room-list",
+                onClick: () => navigate("/room-list"),
+              },
+              {
+                key: "room-type",
+                icon: <TagsOutlined />,
+                label: labelWithCount("Cấu hình loại phòng", 0),
+                navigate: "/room-type",
+                onClick: () => navigate("/room-type"),
+              },
+              {
+                key: "room-price",
+                icon: <DollarOutlined />,
+                label: labelWithCount("Lịch sử giá phòng", 0),
+                navigate: "/room-price",
+                onClick: () => navigate("/room-price"),
+              },
+            ],
+          },
+          {
+            key: "bookings",
+            icon: <CalendarOutlined />,
+            label: labelWithCount("Đặt phòng", 0),
+            onClick: () => navigate("/bookings"),
+          },
+          {
+            key: "customers",
+            icon: <TeamOutlined />,
+            label: labelWithCount("Khách hàng", 0),
+            onClick: () => navigate("/customers"),
+          },
+          {
+            key: "membership",
+            icon: <IdcardOutlined />,
+            label: labelWithCount("Quản lý thành viên", 0),
+            onClick: () => navigate("/membership"),
+          },
+          {
+            key: "services-group",
+            icon: <AppstoreOutlined />,
+            label: "Dịch vụ",
+            children: [
+              {
+                key: "services",
+                icon: <UnorderedListOutlined />,
+                label: "Danh sách dịch vụ",
+                onClick: () => navigate("/services"),
+              },
+              {
+                key: "service-price-log",
+                icon: <DollarOutlined />,
+                label: "Lịch sử giá dịch vụ",
+                onClick: () => navigate("/service-price-log"),
+              },
+              {
+                key: "service-details",
+                icon: <TagsOutlined />,
+                label: "Lịch sử dùng dịch vụ",
+                onClick: () => navigate("/service-details"),
+              },
+            ],
+          },
+        ],
+      },
+      {
+        type: "group",
+        key: "group-finance",
+        label: "Tài chính",
+        show: showFinance,
+        children: [
+          {
+            key: "payments",
+            icon: <CreditCardOutlined />,
+            label: "Thanh toán",
+            onClick: () => navigate("/payments"),
+          },
+        ],
+      },
+      {
+        type: "group",
+        key: "group-system",
+        label: "Hệ thống",
+        show: showSystem,
+        children: [
+          {
+            key: "employees",
+            icon: <UserOutlined />,
+            label: "Nhân viên",
+            onClick: () => navigate("/employees"),
+          },
+        ],
+      },
+    ];
+
+    return allGroups
+      .filter((g) => g.show && g.children?.length)
+      .map((g) => ({
+        key: g.key,
+        type: g.type,
+        label: g.label,
+        children: g.children,
+      }));
+  }, [role, navigate]);
 
   return (
     <Sider
