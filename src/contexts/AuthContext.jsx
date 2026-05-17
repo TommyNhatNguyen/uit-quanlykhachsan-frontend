@@ -33,7 +33,7 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
-      navigate("/employees", { replace: true });
+      navigate("/dashboard", { replace: true });
     } else {
       navigate("/login", { replace: true });
     }

@@ -596,7 +596,14 @@ export default function DashboardPage() {
                         </div>
                         <div style={{ textAlign: "right" }}>
                           <div>
-                            <strong>{fmtVND(total)} ₫</strong>
+                            <strong>
+                              Tổng giá trị booking: {fmtVND(total)} ₫
+                            </strong>
+                          </div>
+                          <div>
+                            <strong>
+                              Tổng giá trị thanh toán: {fmtVND(paid)} ₫
+                            </strong>
                           </div>
                         </div>
                       </div>

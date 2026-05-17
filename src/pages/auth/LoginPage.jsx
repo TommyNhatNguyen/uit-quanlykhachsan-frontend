@@ -10,7 +10,7 @@ export default function LoginPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (user) navigate("/employees", { replace: true });
+    if (user) navigate("/dashboard", { replace: true });
   }, [user, navigate]);
 
   const {
@@ -22,7 +22,7 @@ export default function LoginPage() {
   const onSubmit = async (values) => {
     try {
       await login(values.username, values.password);
-      navigate("/employees", { replace: true });
+      navigate("/dashboard", { replace: true });
     } catch (err) {
       message.error(err.message || "Tên đăng nhập hoặc mật khẩu không đúng");
     }

@@ -2,16 +2,20 @@ import {
   AppstoreOutlined,
   CreditCardOutlined,
   DeleteOutlined,
+  DownloadOutlined,
   EditOutlined,
   EyeOutlined,
+  FilePdfOutlined,
   PlusOutlined,
 } from "@ant-design/icons";
+import { PDFDownloadLink } from "@react-pdf/renderer";
 import { Badge, Button, Radio, Space, Table, Tooltip, Typography } from "antd";
 import { useState } from "react";
 import { useBookingDetailsByBookingId } from "../../hooks/useBookingDetails";
 import useBookings from "../../hooks/useBookings";
 import { UpsertFormTrigger as PaymentFormTrigger } from "../payment/UpsertForm";
 import { UpsertFormTrigger as ServiceDetailFormTrigger } from "../services/service-details/UpsertForm";
+import BookingDocument from "./BookingPdfExporter";
 import { DeleteFormTrigger } from "./DeleteForm";
 import { DetailModalTrigger } from "./DetailModal";
 import { UpsertFormTrigger } from "./UpsertForm";
@@ -36,10 +40,50 @@ const STATUS_LABEL = {
   CANCELED: "Đã huỷ",
 };
 
+const CSV_COLUMNS = [
+  { header: "ID", value: (r) => r.id },
+  { header: "Khách hàng", value: (r) => r.customer?.name ?? r.customer_id ?? "" },
+  { header: "Ngày tạo", value: (r) => fmtDate(r.created_at) },
+  { header: "Số phòng", value: (r) => r.booking_details?.length ?? 0 },
+  {
+    header: "Tổng tiền (VND)",
+    value: (r) =>
+      (r.booking_details ?? []).reduce((s, d) => s + (d.total_amount ?? 0), 0),
+  },
+  {
+    header: "Thanh toán",
+    value: (r) => (r.is_fully_paid ? "Đã thanh toán" : "Chưa thanh toán"),
+  },
+  { header: "Ghi chú", value: (r) => r.notes ?? "" },
+];
+
+function escapeCell(val) {
+  const str = String(val ?? "");
+  return str.includes(",") || str.includes('"') || str.includes("\n")
+    ? `"${str.replace(/"/g, '""')}"`
+    : str;
+}
+
+function exportBookingsCsv(rows) {
+  const header = CSV_COLUMNS.map((c) => c.header).join(",");
+  const body = rows
+    .map((r) => CSV_COLUMNS.map((c) => escapeCell(c.value(r))).join(","))
+    .join("\n");
+  const bom = "﻿";
+  const blob = new Blob([bom + header + "\n" + body], {
+    type: "text/csv;charset=utf-8;",
+  });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `bookings_${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 function BookingDetailsTable({ bookingId }) {
   const { data, isLoading } = useBookingDetailsByBookingId(bookingId);
   const details = Array.isArray(data) ? data : (data?.data ?? []);
-
   return (
     <Table
       loading={isLoading}
@@ -185,6 +229,13 @@ export default function BookingsPage() {
           </Typography.Text>
         </div>
         <Space>
+          <Button
+            icon={<DownloadOutlined />}
+            onClick={() => exportBookingsCsv(data ?? [])}
+            disabled={!data?.length}
+          >
+            Xuất CSV
+          </Button>
           <UpsertFormTrigger>
             <Button type="primary" icon={<PlusOutlined />}>
               Thêm đặt phòng
@@ -197,7 +248,10 @@ export default function BookingsPage() {
           <Typography.Text type="secondary">Thanh toán:</Typography.Text>
           <Radio.Group
             value={isFullyPaid}
-            onChange={(e) => { setIsFullyPaid(e.target.value); setPage(1); }}
+            onChange={(e) => {
+              setIsFullyPaid(e.target.value);
+              setPage(1);
+            }}
             optionType="button"
             buttonStyle="solid"
             size="small"
@@ -303,23 +357,40 @@ export default function BookingsPage() {
               title: "Thao tác",
               key: "actions",
               render: (_, record) => (
-                <Space>
-                  <DetailModalTrigger id={record.id}>
-                    <Tooltip title="Xem chi tiết">
-                      <Button type="text" icon={<EyeOutlined />} />
-                    </Tooltip>
-                  </DetailModalTrigger>
-                  <UpsertFormTrigger id={record.id}>
-                    <Tooltip title="Chỉnh sửa">
-                      <Button type="text" icon={<EditOutlined />} />
-                    </Tooltip>
-                  </UpsertFormTrigger>
-                  <DeleteFormTrigger id={record.id}>
-                    <Tooltip title="Xoá">
-                      <Button danger type="text" icon={<DeleteOutlined />} />
-                    </Tooltip>
-                  </DeleteFormTrigger>
-                </Space>
+                <div style={{ overflow: "auto", maxWidth: 200 }}>
+                  <Space>
+                    <DetailModalTrigger id={record.id}>
+                      <Tooltip title="Xem chi tiết">
+                        <Button type="text" icon={<EyeOutlined />} />
+                      </Tooltip>
+                    </DetailModalTrigger>
+                    <UpsertFormTrigger id={record.id}>
+                      <Tooltip title="Chỉnh sửa">
+                        <Button type="text" icon={<EditOutlined />} />
+                      </Tooltip>
+                    </UpsertFormTrigger>
+                    <PDFDownloadLink
+                      document={<BookingDocument booking={record} />}
+                      fileName={`phieu-dat-phong-${record.id}.pdf`}
+                    >
+                      {({ loading }) => (
+                        <Tooltip title="Tải PDF">
+                          <Button
+                            type="text"
+                            icon={<FilePdfOutlined />}
+                            loading={loading}
+                          />
+                        </Tooltip>
+                      )}
+                    </PDFDownloadLink>
+                    <DeleteFormTrigger id={record.id}>
+                      <Tooltip title="Xoá">
+                        <Button danger type="text" icon={<DeleteOutlined />} />
+                      </Tooltip>
+                    </DeleteFormTrigger>
+                  </Space>
+                </div>
+          
               ),
             },
           ]}
